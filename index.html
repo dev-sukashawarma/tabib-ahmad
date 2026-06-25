@@ -183,9 +183,41 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
     <p id="appTagline">Keuangan &amp; Stok Herbal</p>
   </div>
   <select id="period" class="period"></select>
+  <button onclick="doLogout()" style="position:absolute;right:16px;top:16px;border:none;background:none;color:var(--ink-soft);font-size:18px;cursor:pointer;padding:6px">🚪</button>
 </header>
 
-<main class="wrap" id="view"></main>
+<div id="login" style="display:none">
+  <div style="position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:360px;text-align:center">
+      <div style="width:64px;height:64px;border-radius:20px;font-size:34px;margin:0 auto 18px;background:linear-gradient(150deg,var(--herb),var(--herb-deep));display:grid;place-items:center;color:#f4efe4">ت</div>
+      <h2 style="font-family:Fraunces;font-weight:600;font-size:26px;margin:0 0 4px">Tabib Ahmad</h2>
+      <p style="margin:0 0 22px;color:var(--ink-soft);font-size:13.5px">Keuangan & Stok Herbal</p>
+      <div style="background:var(--card);padding:20px;text-align:left;border-radius:18px;border:1px solid var(--line)">
+        <div style="display:none" id="auth-form-login">
+          <label>Email</label><input id="lg_email" type="email" autocomplete="username" placeholder="email@contoh.com" style="margin-bottom:12px">
+          <label>Password</label><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••••" style="margin-bottom:14px">
+          <button class="btn" onclick="doLogin()">Masuk</button>
+          <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--ink-soft)">
+            Belum punya akun? <button onclick="toggleAuthForm()" style="border:none;background:none;color:var(--herb);font-weight:600;cursor:pointer;padding:0">Daftar di sini</button>
+          </div>
+          <div style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600;text-align:center" id="lg_err"></div>
+        </div>
+        <div style="display:none" id="auth-form-signup">
+          <label>Email</label><input id="sg_email" type="email" autocomplete="username" placeholder="email@contoh.com" style="margin-bottom:12px">
+          <label>Password</label><input id="sg_pass" type="password" autocomplete="new-password" placeholder="minimal 6 karakter" style="margin-bottom:12px">
+          <label>Konfirmasi Password</label><input id="sg_pass2" type="password" autocomplete="new-password" placeholder="••••••••" style="margin-bottom:14px">
+          <button class="btn" onclick="doSignup()">Daftar</button>
+          <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--ink-soft)">
+            Sudah punya akun? <button onclick="toggleAuthForm()" style="border:none;background:none;color:var(--herb);font-weight:600;cursor:pointer;padding:0">Login di sini</button>
+          </div>
+          <div style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600;text-align:center" id="sg_err"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="view" style="display:none"></main>
 
 <button class="fab" id="fab" aria-label="Tambah">+</button>
 
@@ -200,6 +232,74 @@ const RP = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
 /* ---------- Supabase ---------- */
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let db = {produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],memo:[]};
+let currentUser = null;
+
+/* ---------- Auth ---------- */
+function toggleAuthForm(){
+  const lg=document.getElementById('auth-form-login'), sg=document.getElementById('auth-form-signup');
+  if(lg.style.display==='none'){lg.style.display='block';sg.style.display='none';}
+  else{lg.style.display='none';sg.style.display='block';}
+  document.getElementById('lg_err').textContent='';
+  document.getElementById('sg_err').textContent='';
+}
+window.toggleAuthForm=toggleAuthForm;
+
+async function doLogin(){
+  const email=document.getElementById('lg_email').value.trim();
+  const pass=document.getElementById('lg_pass').value;
+  const err=document.getElementById('lg_err');
+  if(!email||!pass)return err.textContent='Isi email dan password';
+  err.textContent='Memproses...';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){err.textContent='Login gagal: '+error.message;return;}
+  enterApp();
+}
+window.doLogin=doLogin;
+
+async function doSignup(){
+  const email=document.getElementById('sg_email').value.trim();
+  const pass=document.getElementById('sg_pass').value;
+  const pass2=document.getElementById('sg_pass2').value;
+  const err=document.getElementById('sg_err');
+  if(!email||!pass||!pass2)return err.textContent='Isi semua field';
+  if(pass.length<6)return err.textContent='Password minimal 6 karakter';
+  if(pass!==pass2)return err.textContent='Password tidak cocok';
+  err.textContent='Memproses...';
+  const {data,error}=await sb.auth.signUp({email,password:pass});
+  if(error){err.textContent='Daftar gagal: '+error.message;return;}
+  err.textContent='';
+  err.style.color='var(--green)';
+  err.textContent='✓ Daftar berhasil! Silakan login.';
+  setTimeout(()=>toggleAuthForm(),1500);
+}
+window.doSignup=doSignup;
+
+async function doLogout(){
+  if(!confirm('Logout?'))return;
+  await sb.auth.signOut();
+  currentUser=null;
+  db={produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],memo:[]};
+  showLogin();
+}
+window.doLogout=doLogout;
+
+function showLogin(){
+  document.getElementById('login').style.display='block';
+  document.getElementById('view').style.display='none';
+  document.getElementById('auth-form-login').style.display='block';
+  document.getElementById('auth-form-signup').style.display='none';
+}
+
+async function enterApp(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return;
+  currentUser=session.user;
+  document.getElementById('login').style.display='none';
+  document.getElementById('view').style.display='block';
+  await loadAll();
+  period=allMonths()[0];
+  render();
+}
 
 /* ---------- Settings (localStorage) ---------- */
 let settings = JSON.parse(localStorage.getItem('ta_settings')||'{}');
@@ -215,13 +315,14 @@ function applySettings(){
 }
 
 async function loadAll(){
+  if(!currentUser){showLogin();return;}
   const [pr,am,ju,op,be,ad] = await Promise.all([
-    sb.from('produk').select('*').order('created_at'),
-    sb.from('amplop').select('*'),
-    sb.from('jual').select('*'),
-    sb.from('ops').select('*'),
-    sb.from('beli').select('*'),
-    sb.from('adj').select('*'),
+    sb.from('produk').select('*').eq('user_id',currentUser.id).order('created_at'),
+    sb.from('amplop').select('*').eq('user_id',currentUser.id),
+    sb.from('jual').select('*').eq('user_id',currentUser.id),
+    sb.from('ops').select('*').eq('user_id',currentUser.id),
+    sb.from('beli').select('*').eq('user_id',currentUser.id),
+    sb.from('adj').select('*').eq('user_id',currentUser.id),
   ]);
   const err=[pr,am,ju,op,be,ad].find(r=>r.error);
   if(err){alert('Gagal memuat data: '+err.error.message);return;}
@@ -927,14 +1028,14 @@ async function saveForm(kind){
   const g=id=>document.getElementById(id)?.value;
   let res;
   if(kind==='amplop'){const j=+g('f_jumlah');if(!j)return alert('Isi jumlah');
-    res=await sb.from('amplop').insert({tgl:g('f_tgl'),sumber:g('f_sumber'),jumlah:j,catatan:g('f_cat')});}
+    res=await sb.from('amplop').insert({user_id:currentUser.id,tgl:g('f_tgl'),sumber:g('f_sumber'),jumlah:j,catatan:g('f_cat')});}
   else if(kind==='ops'){const j=+g('f_jumlah');if(!g('f_nama')||!j)return alert('Isi nama & jumlah');
-    res=await sb.from('ops').insert({tgl:g('f_tgl'),nama:g('f_nama'),jumlah:j,kategori:g('f_kat'),catatan:g('f_cat')});}
+    res=await sb.from('ops').insert({user_id:currentUser.id,tgl:g('f_tgl'),nama:g('f_nama'),jumlah:j,kategori:g('f_kat'),catatan:g('f_cat')});}
   else if(kind==='jual'){const q=+g('f_qty'),h=+g('f_harga');if(!q||!h)return alert('Isi jumlah & harga');
     const pr=db.produk.find(p=>p.id===g('f_prod'));
-    res=await sb.from('jual').insert({tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,hpp_snapshot:pr?pr.hpp:0,catatan:g('f_cat')});}
+    res=await sb.from('jual').insert({user_id:currentUser.id,tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,hpp_snapshot:pr?pr.hpp:0,catatan:g('f_cat')});}
   else if(kind==='beli'){const q=+g('f_qty'),h=+g('f_harga');if(!q||!h)return alert('Isi jumlah & harga');
-    res=await sb.from('beli').insert({tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,catatan:g('f_cat')});
+    res=await sb.from('beli').insert({user_id:currentUser.id,tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,catatan:g('f_cat')});
     if(!res.error)await sb.from('produk').update({hpp:h}).eq('id',g('f_prod'));}
   else if(kind==='produk'){if(!g('f_nama'))return alert('Isi nama produk');
     const eid=g('f_id');
@@ -946,10 +1047,10 @@ async function saveForm(kind){
     const payload={nama:g('f_nama'),kategori:g('f_kat2'),satuan:g('f_sat')||'pcs',hpp:+g('f_hpp')||0,stok_min:+g('f_min')||0,harga_jual:+g('f_jual')||0};
     if(imageUrl)payload.image_url=imageUrl;
     if(eid)res=await sb.from('produk').update(payload).eq('id',eid);
-    else{payload.stok_awal=+g('f_awal')||0;res=await sb.from('produk').insert(payload);}}
+    else{payload.user_id=currentUser.id;payload.stok_awal=+g('f_awal')||0;res=await sb.from('produk').insert(payload);}}
   else if(kind==='opname'){const pr=db.produk.find(p=>p.id===g('f_id'));const fisik=+g('f_fisik');
     const delta=fisik-pr.stok;if(delta===0){closeSheet();return;}
-    res=await sb.from('adj').insert({tgl:g('f_tgl'),produk_id:pr.id,delta,catatan:g('f_cat')});}
+    res=await sb.from('adj').insert({user_id:currentUser.id,tgl:g('f_tgl'),produk_id:pr.id,delta,catatan:g('f_cat')});}
   else if(kind==='memo'){const teks=g('f_teks')?.trim();if(!teks)return alert('Isi catatan');
     db.memo.push({id:Date.now(),tgl:g('f_tgl'),teks});
     localStorage.setItem('ta_memo',JSON.stringify(db.memo));
@@ -973,9 +1074,13 @@ if('serviceWorker' in navigator){
 (async function init(){
   if(SUPABASE_URL.includes('__')){document.body.innerHTML='<p style="font-family:sans-serif;padding:30px">⚠️ Konfigurasi Supabase belum diisi (SUPABASE_URL / SUPABASE_ANON).</p>';return;}
   applySettings();
-  await loadAll();
-  period=allMonths()[0];
-  render();
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){
+    currentUser=session.user;
+    enterApp();
+  } else {
+    showLogin();
+  }
 })();
 </script>
 </body>

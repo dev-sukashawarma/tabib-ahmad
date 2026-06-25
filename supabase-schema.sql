@@ -6,7 +6,7 @@
 -- ---------- PRODUK (master barang + stok) ----------
 create table if not exists produk (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
   nama        text not null,
   kategori    text default 'Lainnya',
   satuan      text default 'pcs',
@@ -21,7 +21,7 @@ create table if not exists produk (
 -- ---------- PEMASUKAN AMPLOP (jasa/donasi) ----------
 create table if not exists amplop (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
   tgl         date not null,
   sumber      text,
   jumlah      numeric not null,
@@ -45,7 +45,7 @@ create table if not exists jual (
 -- ---------- PENGELUARAN TABIB (operasional) ----------
 create table if not exists ops (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
   tgl         date not null,
   nama        text not null,
   jumlah      numeric not null,
@@ -57,7 +57,7 @@ create table if not exists ops (
 -- ---------- PEMBELIAN PRODUK (modal beli stok) ----------
 create table if not exists beli (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
   tgl         date not null,
   produk_id   uuid references produk(id) on delete cascade,
   qty         numeric not null,
@@ -69,7 +69,7 @@ create table if not exists beli (
 -- ---------- PENYESUAIAN STOK (opname) ----------
 create table if not exists adj (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id     uuid references auth.users(id) on delete cascade,
   tgl         date not null,
   produk_id   uuid references produk(id) on delete cascade,
   delta       numeric not null,          -- selisih (stok fisik - stok sistem)
@@ -78,9 +78,23 @@ create table if not exists adj (
 );
 
 -- ============================================================
---  RLS: DISABLED (single-user, no authentication)
---  Jika ingin keamanan nanti, enable RLS dan buat policies di dashboard Supabase.
+--  Row Level Security (RLS): ENABLED
+--  Tiap user hanya bisa akses datanya sendiri (user_id = auth.uid())
 -- ============================================================
+do $$
+declare t text;
+begin
+  foreach t in array array['produk','amplop','jual','ops','beli','adj'] loop
+    execute format('alter table %I enable row level security;', t);
+    execute format('drop policy if exists own_rows on %I;', t);
+    execute format($f$
+      create policy own_rows on %I
+        for all
+        using (user_id = auth.uid())
+        with check (user_id = auth.uid());
+    $f$, t);
+  end loop;
+end $$;
 
 -- ============================================================
 --  STORAGE BUCKET: Setup manual di dashboard Supabase
