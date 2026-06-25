@@ -135,8 +135,8 @@ nav.tabs{
 }
 nav.tabs .in{max-width:520px;margin:0 auto;display:flex}
 nav.tabs button{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:6px 2px;color:var(--ink-soft);font-family:inherit;font-size:10.5px;font-weight:600;cursor:pointer;border-radius:12px;position:relative}
-nav.tabs button svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8}
+  padding:6px 1px;color:var(--ink-soft);font-family:inherit;font-size:10px;font-weight:600;cursor:pointer;border-radius:12px;position:relative}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
 nav.tabs button.on{color:var(--herb)}
 nav.tabs button.on svg{stroke:var(--herb)}
 .nav-badge{position:absolute;top:2px;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:9px;font-weight:800;
@@ -243,7 +243,7 @@ const RP = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
 
 /* ---------- Supabase ---------- */
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-let db = {produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],memo:[]};
+let db = {produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],ads:[],memo:[]};
 let currentUser = null;
 
 /* ---------- Auth ---------- */
@@ -290,7 +290,7 @@ async function doLogout(){
   if(!confirm('Logout?'))return;
   await sb.auth.signOut();
   currentUser=null;
-  db={produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],memo:[]};
+  db={produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],ads:[],memo:[]};
   showLogin();
 }
 window.doLogout=doLogout;
@@ -330,15 +330,16 @@ function applySettings(){
 
 async function loadAll(){
   if(!currentUser){showLogin();return;}
-  const [pr,am,ju,op,be,ad] = await Promise.all([
+  const [pr,am,ju,op,be,ad,ds] = await Promise.all([
     sb.from('produk').select('*').eq('user_id',currentUser.id).order('created_at'),
     sb.from('amplop').select('*').eq('user_id',currentUser.id),
     sb.from('jual').select('*').eq('user_id',currentUser.id),
     sb.from('ops').select('*').eq('user_id',currentUser.id),
     sb.from('beli').select('*').eq('user_id',currentUser.id),
     sb.from('adj').select('*').eq('user_id',currentUser.id),
+    sb.from('ads').select('*').eq('user_id',currentUser.id),
   ]);
-  const err=[pr,am,ju,op,be,ad].find(r=>r.error);
+  const err=[pr,am,ju,op,be,ad,ds].find(r=>r.error);
   if(err){alert('Gagal memuat data: '+err.error.message);return;}
   db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,hargaJual:+r.harga_jual,stokMin:+r.stok_min,stokAwal:+r.stok_awal,imageUrl:r.image_url,stok:0}));
   db.amplop=(am.data||[]).map(r=>({id:r.id,tgl:r.tgl,sumber:r.sumber,jumlah:+r.jumlah,catatan:r.catatan}));
@@ -346,6 +347,7 @@ async function loadAll(){
   db.ops=(op.data||[]).map(r=>({id:r.id,tgl:r.tgl,nama:r.nama,jumlah:+r.jumlah,kategori:r.kategori,catatan:r.catatan}));
   db.beli=(be.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,qty:+r.qty,harga:+r.harga,catatan:r.catatan}));
   db.adj=(ad.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,delta:+r.delta,catatan:r.catatan}));
+  db.ads=(ds.data||[]).map(r=>({id:r.id,tgl:r.tgl,jenis:r.jenis,nama:r.nama,jumlah:+r.jumlah,catatan:r.catatan}));
   db.memo = JSON.parse(localStorage.getItem('ta_memo')||'[]');
   rebuild(db);
 }
@@ -391,14 +393,14 @@ function totals(){
 function alertCount(){return db.produk.filter(p=>p.stok<=p.stokMin).length;}
 
 /* ---------- search state ---------- */
-let srchMasuk='', srchKeluar='', srchStok='';
+let srchMasuk='', srchKeluar='', srchStok='', srchAds='';
 
 /* ---------- views ---------- */
 let tab='dash';
 function render(){
   document.getElementById('period').innerHTML = allMonths().map(m=>`<option ${m===period?'selected':''} value="${m}">${idMonth(m)}</option>`).join('');
   const v=document.getElementById('view');
-  v.innerHTML = ({dash:vDash,masuk:vMasuk,keluar:vKeluar,stok:vStok,memo:vMemo,setting:vSetting})[tab]();
+  v.innerHTML = ({dash:vDash,masuk:vMasuk,keluar:vKeluar,stok:vStok,ads:vAds,memo:vMemo,setting:vSetting})[tab]();
   v.classList.remove('fade');void v.offsetWidth;v.classList.add('fade');
   renderNav();
   document.getElementById('fab').style.display = (tab==='dash'||tab==='setting')?'none':'grid';
@@ -614,6 +616,7 @@ function renderList(which){
   if(which==='masuk'){const el=document.getElementById('list-masuk');if(el)el.innerHTML=masukTab==='amplop'?listAmplop():listJual();}
   if(which==='keluar'){const el=document.getElementById('list-keluar');if(el)el.innerHTML=keluarTab==='ops'?listOps():listBeli();}
   if(which==='stok'){const el=document.getElementById('list-stok');if(el)el.innerHTML=listStokItems();}
+  if(which==='ads'){const el=document.getElementById('list-ads');if(el)el.innerHTML=listAds();}
 }
 window.renderList=renderList;
 
@@ -700,6 +703,28 @@ function openProdukDetail(id){
   `);
 }
 window.openProdukDetail=openProdukDetail;
+
+/* ---------- ADS & ENDORSEMENT ---------- */
+function vAds(){
+  const total=db.ads.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.jumlah,0);
+  return `<h2 class="sec">Ads & Endorsement</h2>
+  <div class="hero" style="background:linear-gradient(150deg,#7a4fae,#5a3a82)">
+    <div class="lbl">Total Biaya Promosi · ${idMonth(period)}</div>
+    <div class="big">${RP(total)}</div>
+    <div class="sub">Catatan terpisah — tidak mengurangi Laba Bersih di Beranda.</div>
+  </div>
+  <div class="search-wrap"><input placeholder="Cari iklan / endorse..." value="${srchAds}" oninput="srchAds=this.value;renderList('ads')"></div>
+  <div class="card" id="list-ads">${listAds()}</div>
+  <button class="btn" style="background:linear-gradient(150deg,#7a4fae,#5a3a82);margin-top:16px" onclick="openForm('ads')">+ Catat biaya iklan/endorse</button>`;
+}
+function listAds(){
+  let r=db.ads.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  if(srchAds){const q=srchAds.toLowerCase();r=r.filter(x=>(x.nama||'').toLowerCase().includes(q)||(x.jenis||'').toLowerCase().includes(q));}
+  if(!r.length)return emptyRow();
+  return r.map(x=>`<div class="row"><div class="ic" style="background:#efe6f7">${x.jenis==='Endorse'?'🤝':'📣'}</div>
+    <div><div class="ti">${x.nama||x.jenis}</div><div class="me">${fdate(x.tgl)} · <span class="pill">${x.jenis}</span>${x.catatan?' · '+x.catatan:''}</div></div>
+    <div class="amt out">${RP(x.jumlah)}</div>${delBtn('ads',x.id)}</div>`).join('');
+}
 
 /* ---------- MEMO ---------- */
 function vMemo(){
@@ -846,6 +871,7 @@ function renderNav(){
     ['masuk','Masuk','M12 19V5M5 12l7-7 7 7',0],
     ['keluar','Keluar','M12 5v14M5 12l7 7 7-7',0],
     ['stok','Stok','M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7',ac],
+    ['ads','Ads','M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 11-5.8-1.6',0],
     ['memo','Memo','M9 12h6M9 16h4M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',0],
     ['setting','Atur','M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',0],
   ];
@@ -879,6 +905,7 @@ document.getElementById('fab').onclick=()=>{
   if(tab==='masuk')openForm(masukTab==='amplop'?'amplop':'jual');
   else if(tab==='keluar')openForm(keluarTab==='ops'?'ops':'beli');
   else if(tab==='stok')openForm('produk');
+  else if(tab==='ads')openForm('ads');
   else if(tab==='memo')openForm('memo');
 };
 
@@ -1066,6 +1093,18 @@ function openForm(kind,arg){
     <textarea id="f_teks" rows="5" placeholder="Tulis catatan, pengingat, atau info penting…" style="resize:none"></textarea>
     <button class="btn" onclick="saveForm('memo')">Simpan catatan</button>`;
   }
+  else if(kind==='ads'){
+    h=`<h3>📣 Biaya Iklan / Endorse</h3>
+    <label>Tanggal</label><input type="date" id="f_tgl" value="${today()}">
+    <div class="two"><div><label>Jenis</label><select id="f_jenis">
+      <option value="Iklan">📣 Iklan (Ads)</option>
+      <option value="Endorse">🤝 Endorse</option>
+    </select></div>
+    <div><label>Biaya (Rp)</label><input id="f_jumlah" type="number" inputmode="numeric" placeholder="0"></div></div>
+    <label>Nama / Platform</label><input id="f_nama" placeholder="Mis. Instagram Ads, @influencer…">
+    <label>Catatan</label><input id="f_cat" placeholder="opsional">
+    <button class="btn" style="background:linear-gradient(150deg,#7a4fae,#5a3a82)" onclick="saveForm('ads')">Simpan</button>`;
+  }
 
   openSheet(h);
   if(kind==='jual')prefillJual();
@@ -1119,6 +1158,8 @@ async function saveForm(kind){
   else if(kind==='opname'){const pr=db.produk.find(p=>p.id===g('f_id'));const fisik=+g('f_fisik');
     const delta=fisik-pr.stok;if(delta===0){closeSheet();return;}
     res=await sb.from('adj').insert({user_id:currentUser.id,tgl:g('f_tgl'),produk_id:pr.id,delta,catatan:g('f_cat')});}
+  else if(kind==='ads'){const j=+g('f_jumlah');if(!j)return alert('Isi biaya');
+    res=await sb.from('ads').insert({user_id:currentUser.id,tgl:g('f_tgl'),jenis:g('f_jenis'),nama:g('f_nama'),jumlah:j,catatan:g('f_cat')});}
   else if(kind==='memo'){const teks=g('f_teks')?.trim();if(!teks)return alert('Isi catatan');
     db.memo.push({id:Date.now(),tgl:g('f_tgl'),teks});
     localStorage.setItem('ta_memo',JSON.stringify(db.memo));

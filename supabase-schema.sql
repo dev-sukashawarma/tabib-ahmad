@@ -77,6 +77,18 @@ create table if not exists adj (
   created_at  timestamptz default now()
 );
 
+-- ---------- ADS & ENDORSEMENT (biaya promosi, catatan terpisah) ----------
+create table if not exists ads (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete cascade,
+  tgl         date not null,
+  jenis       text default 'Iklan',      -- Iklan / Endorse
+  nama        text,                       -- platform / nama influencer
+  jumlah      numeric not null,           -- biaya promosi
+  catatan     text,
+  created_at  timestamptz default now()
+);
+
 -- ============================================================
 --  Row Level Security (RLS): ENABLED
 --  Tiap user hanya bisa akses datanya sendiri (user_id = auth.uid())
@@ -84,7 +96,7 @@ create table if not exists adj (
 do $$
 declare t text;
 begin
-  foreach t in array array['produk','amplop','jual','ops','beli','adj'] loop
+  foreach t in array array['produk','amplop','jual','ops','beli','adj','ads'] loop
     execute format('alter table %I enable row level security;', t);
     execute format('drop policy if exists own_rows on %I;', t);
     execute format($f$
