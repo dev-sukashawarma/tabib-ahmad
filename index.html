@@ -327,30 +327,80 @@ function vDash(){
 
 /* ---------- charts ---------- */
 function chartBars(t){
-  const data=[['Pemasukan',t.pemasukan,'var(--green)'],['HPP',t.hpp,'var(--amber)'],
-    ['Operasional',t.opsTotal,'var(--red)'],['Laba',Math.max(t.laba,0),'var(--herb)']];
-  const max=Math.max(1,...data.map(d=>d[1]));
-  return `<div style="display:flex;align-items:flex-end;gap:14px;height:150px">
-    ${data.map(([l,v,c])=>{const h=Math.round(v/max*120);
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end">
-        <div style="font-size:10.5px;font-weight:700;color:var(--ink-soft)">${v>=1000?Math.round(v/1000)+'rb':v}</div>
-        <div style="width:100%;max-width:46px;height:${h}px;background:${c};border-radius:9px 9px 4px 4px;transition:height .5s"></div>
-        <div style="font-size:11px;font-weight:600;color:var(--ink-soft)">${l}</div>
-      </div>`}).join('')}
+  const margin=t.pemasukan>0?Math.round(t.laba/t.pemasukan*100):0;
+  const data=[
+    {l:'Pemasukan',v:t.pemasukan,c:'var(--green)',sub:[
+      {l:'Amplop',v:t.masukAmplop,c:'var(--green)'},
+      {l:'Produk',v:t.masukProduk,c:'#5a9e6a'}
+    ]},
+    {l:'HPP',v:t.hpp,c:'var(--amber)',sub:[]},
+    {l:'Operasional',v:t.opsTotal,c:'var(--red)',sub:[]},
+    {l:'Laba',v:Math.max(t.laba,0),c:t.laba<0?'var(--red)':'var(--herb)',sub:[]}
+  ];
+  const max=Math.max(1,...data.map(d=>d.v));
+  const fmt=v=>v>=1000000?'Rp '+(v/1000000).toFixed(1)+'jt':v>=1000?'Rp '+Math.round(v/1000)+'rb':'Rp '+v;
+  return `
+  <div style="display:flex;align-items:flex-end;gap:10px;height:160px;margin-bottom:14px">
+    ${data.map(d=>{
+      const h=Math.max(Math.round(d.v/max*120),d.v>0?4:0);
+      let bar='';
+      if(d.sub.length&&(d.sub[0].v||d.sub[1].v)){
+        const tot=d.sub[0].v+d.sub[1].v||1;
+        const h0=Math.round(d.sub[0].v/tot*h), h1=h-h0;
+        bar=`<div style="width:100%;max-width:52px;height:${h}px;border-radius:9px 9px 4px 4px;overflow:hidden;display:flex;flex-direction:column">
+          <div style="flex:${h1};background:#5a9e6a"></div>
+          <div style="flex:${h0};background:var(--green)"></div>
+        </div>`;
+      } else {
+        bar=`<div style="width:100%;max-width:52px;height:${Math.max(h,d.v>0?4:0)}px;background:${d.c};border-radius:9px 9px 4px 4px;transition:height .5s"></div>`;
+      }
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;justify-content:flex-end">
+        <div style="font-size:10px;font-weight:700;color:var(--ink-soft);text-align:center;line-height:1.3">${fmt(d.v)}</div>
+        ${bar}
+        <div style="font-size:10.5px;font-weight:600;color:var(--ink-soft);text-align:center">${d.l}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div style="border-top:1px solid var(--line);padding-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+      <div style="width:10px;height:10px;border-radius:3px;background:var(--green)"></div>
+      <span style="color:var(--ink-soft)">Amplop</span><b>${RP(t.masukAmplop)}</b>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+      <div style="width:10px;height:10px;border-radius:3px;background:#5a9e6a"></div>
+      <span style="color:var(--ink-soft)">Produk</span><b>${RP(t.masukProduk)}</b>
+    </div>
+    <div style="margin-left:auto;font-size:12px;font-weight:700;color:${margin<0?'var(--red)':'var(--herb)'}">
+      Margin ${margin}%
+    </div>
   </div>`;
 }
+
 function chartKategori(){
-  const m={};db.ops.filter(x=>inP(x.tgl)).forEach(x=>m[x.kategori]=(m[x.kategori]||0)+x.jumlah);
+  const m={};const cnt={};
+  const filtered=db.ops.filter(x=>inP(x.tgl));
+  filtered.forEach(x=>{m[x.kategori]=(m[x.kategori]||0)+x.jumlah;cnt[x.kategori]=(cnt[x.kategori]||0)+1;});
   const rows=Object.entries(m).sort((a,b)=>b[1]-a[1]);
   if(!rows.length)return `<div class="empty" style="padding:14px">Belum ada pengeluaran operasional.</div>`;
   const tot=rows.reduce((s,r)=>s+r[1],0),max=rows[0][1];
   const cols=['var(--herb)','var(--amber)','var(--red)','var(--gold)','var(--herb-deep)','#7a6a52'];
-  return rows.map(([k,v],i)=>`<div style="margin:${i?12:2}px 0 0">
-    <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:5px">
-      <span>${k} <span class="muted" style="font-weight:500">${Math.round(v/tot*100)}%</span></span><span>${RP(v)}</span></div>
-    <div style="height:10px;background:var(--bg2);border-radius:99px;overflow:hidden">
-      <div style="height:100%;width:${Math.round(v/max*100)}%;background:${cols[i%cols.length]};border-radius:99px;transition:width .5s"></div></div>
-  </div>`).join('');
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)">
+    <div style="font-size:12px;color:var(--ink-soft);font-weight:600">${filtered.length} transaksi</div>
+    <div style="font-family:Fraunces;font-size:18px;font-weight:600;color:var(--red)">${RP(tot)}</div>
+  </div>
+  ${rows.map(([k,v],i)=>`<div style="margin:${i?14:0}px 0 0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <div>
+        <span style="font-size:13px;font-weight:700">${k}</span>
+        <span style="font-size:11px;color:var(--ink-soft);margin-left:6px">${cnt[k]} transaksi · ${Math.round(v/tot*100)}%</span>
+      </div>
+      <span style="font-size:13px;font-weight:700">${RP(v)}</span>
+    </div>
+    <div style="height:8px;background:var(--bg2);border-radius:99px;overflow:hidden">
+      <div style="height:100%;width:${Math.round(v/max*100)}%;background:${cols[i%cols.length]};border-radius:99px;transition:width .6s"></div>
+    </div>
+  </div>`).join('')}`;
 }
 function chartTren(){
   const months=allMonths().slice(0,6).reverse();
