@@ -9,11 +9,14 @@ Backend: **Supabase** (Postgres). **Tanpa login** — akses langsung, single-use
 1. **Buat tabel** — di Supabase: SQL Editor → tempel isi [`supabase-schema.sql`](supabase-schema.sql) → **Run**.
    (Tabel akan dibuat otomatis tanpa RLS.)
 
-2. **Isi kredensial** — di `index.html` bagian atas, ganti:
+2. **Buat bucket storage** — Storage → **New Bucket** → nama `produk-images` → Public → Create.
+   (Untuk upload gambar produk.)
+
+3. **Isi kredensial** — di `index.html` bagian atas, ganti:
    - `SUPABASE_URL` → Project URL (contoh: `https://xxxx.supabase.co`)
    - `SUPABASE_ANON` → anon/public key (lihat Project Settings → API)
 
-3. **Buka** `index.html` di browser (atau deploy ke hosting statis).
+4. **Buka** `index.html` di browser (atau deploy ke hosting statis).
    → Langsung masuk ke aplikasi, tidak perlu login.
 
 ## Catatan

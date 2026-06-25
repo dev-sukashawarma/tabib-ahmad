@@ -14,6 +14,7 @@ create table if not exists produk (
   harga_jual  numeric default 0,
   stok_min    numeric default 0,
   stok_awal   numeric default 0,
+  image_url   text,                      -- path ke file di storage bucket
   created_at  timestamptz default now()
 );
 
@@ -79,4 +80,11 @@ create table if not exists adj (
 -- ============================================================
 --  RLS: DISABLED (single-user, no authentication)
 --  Jika ingin keamanan nanti, enable RLS dan buat policies di dashboard Supabase.
+-- ============================================================
+
+-- ============================================================
+--  STORAGE BUCKET: Setup manual di dashboard Supabase
+--  1. Storage → New Bucket → nama: "produk-images"
+--  2. Policies: Public → pilih "For query" dan "For insert" → All users can access
+--  File path format: produk/{produk_id}/{filename}
 -- ============================================================

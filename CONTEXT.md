@@ -21,7 +21,9 @@ menjadi dasar HPP.
 
 ### Produk
 Barang yang dibeli untuk dijual (Aqua, Garam, Minyak, Luban, Sepron, dll).
-Punya stok (qty) dan nilai HPP.
+Punya stok (qty), nilai HPP, dan gambar (optional, jpg/png, max 5MB).
+Gambar disimpan di Supabase Storage bucket `produk-images`, ditampilkan sebagai
+thumbnail di daftar stok & preview saat edit produk.
 
 ### HPP (Harga Pokok Penjualan / COGS)
 Biaya perolehan barang **yang terjual saja**. Dipakai untuk menghitung laba kotor

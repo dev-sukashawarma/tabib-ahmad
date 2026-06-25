@@ -197,7 +197,7 @@ async function loadAll(){
   ]);
   const err=[pr,am,ju,op,be,ad].find(r=>r.error);
   if(err){alert('Gagal memuat data: '+err.error.message);return;}
-  db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,hargaJual:+r.harga_jual,stokMin:+r.stok_min,stokAwal:+r.stok_awal,stok:0}));
+  db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,hargaJual:+r.harga_jual,stokMin:+r.stok_min,stokAwal:+r.stok_awal,imageUrl:r.image_url,stok:0}));
   db.amplop=(am.data||[]).map(r=>({id:r.id,tgl:r.tgl,sumber:r.sumber,jumlah:+r.jumlah,catatan:r.catatan}));
   db.jual=(ju.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,qty:+r.qty,harga:+r.harga,hppSnapshot:+r.hpp_snapshot,catatan:r.catatan}));
   db.ops=(op.data||[]).map(r=>({id:r.id,tgl:r.tgl,nama:r.nama,jumlah:+r.jumlah,kategori:r.kategori,catatan:r.catatan}));
@@ -409,7 +409,8 @@ const KATEGORI=['Herbal','Konsumsi','Alat','Lainnya'];
 function prodRow(p){
   const out=p.stok<=0,low=p.stok>0&&p.stok<=p.stokMin;
   const cls=out?'b-out':low?'b-low':'b-ok', txt=out?(p.stok<0?'minus':'habis'):low?'menipis':'aman';
-  return `<div class="row" style="cursor:pointer" onclick="openForm('produk','${p.id}')"><div class="ic">📦</div>
+  const thumb=p.imageUrl?`<img src="${p.imageUrl}" style="width:40px;height:40px;border-radius:12px;object-fit:cover" alt="${p.nama}">`:'📦';
+  return `<div class="row" style="cursor:pointer" onclick="openForm('produk','${p.id}')"><div class="ic">${thumb}</div>
     <div><div class="ti">${p.nama} <span class="muted" style="font-weight:500;font-size:12px">›</span></div><div class="me">Modal ${RP(p.hpp)} · jual ${RP(p.hargaJual)}</div></div>
     <div class="amt">${p.stok} ${p.satuan}<small><span class="badge ${cls}">${txt}</span></small></div></div>`;
 }
@@ -468,6 +469,31 @@ document.getElementById('fab').onclick=()=>{
 const today=()=>new Date().toISOString().slice(0,10);
 function prodOptions(sel){return db.produk.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${p.nama} (${p.stok} ${p.satuan})</option>`).join('')}
 
+/* ---------- upload gambar ---------- */
+async function uploadImage(file,produkId){
+  if(!file)return null;
+  const allowed=['image/jpeg','image/png'];
+  if(!allowed.includes(file.type))return alert('Format hanya jpg/jpeg/png');
+  if(file.size>5*1024*1024)return alert('Ukuran max 5MB');
+
+  const ext=file.name.slice(file.name.lastIndexOf('.'));
+  const path=`produk/${produkId}/${Date.now()}${ext}`;
+  const {data,error}=await sb.storage.from('produk-images').upload(path,file,{upsert:false});
+  if(error)return alert('Upload gagal: '+error.message);
+
+  const {data:{publicUrl}}=sb.storage.from('produk-images').getPublicUrl(path);
+  return publicUrl;
+}
+function previewImage(fileInputId,previewId){
+  const file=document.getElementById(fileInputId).files[0];
+  const el=document.getElementById(previewId);
+  if(!file){el.innerHTML='';return;}
+  const reader=new FileReader();
+  reader.onload=e=>{el.innerHTML=`<img src="${e.target.result}" style="max-width:120px;max-height:120px;border-radius:12px;margin-top:10px">`};
+  reader.readAsDataURL(file);
+}
+window.previewImage=previewImage;
+
 function openForm(kind,arg){
   let h='';
   if(kind==='amplop')h=`<h3>💛 Pemasukan Amplop</h3>
@@ -520,6 +546,9 @@ function openForm(kind,arg){
     <div><label>Harga jual (Rp)</label><input id="f_jual" type="number" inputmode="numeric" placeholder="harga jual" value="${ed&&ed.hargaJual?ed.hargaJual:''}"></div></div>
     <div class="two"><div><label>Stok minimum</label><input id="f_min" type="number" inputmode="numeric" value="${ed?ed.stokMin:5}"></div>
     ${ed?'':`<div><label>Stok awal</label><input id="f_awal" type="number" inputmode="numeric" value="0"></div>`}</div>
+    <label>Gambar produk (jpg/png, max 5MB)</label>
+    <input id="f_img" type="file" accept="image/jpeg,image/png" onchange="previewImage('f_img','f_img_preview')">
+    <div id="f_img_preview">${ed&&ed.imageUrl?`<img src="${ed.imageUrl}" style="max-width:120px;max-height:120px;border-radius:12px;margin-top:10px">`:''}</div>
     <div class="note">${ed?`Stok saat ini <b>${ed.stok} ${ed.satuan}</b> (otomatis dari Beli/Jual & penyesuaian). <b>Harga modal</b> dipakai untuk hitung laba; ikut terisi otomatis dari harga beli terakhir.`:'Isi stok awal jika barang sudah Anda punya. Selanjutnya stok bertambah lewat <b>Keluar › Beli Stok</b>.'}</div>
     <button class="btn" onclick="saveForm('produk')">Simpan produk</button>
     ${ed?`<button class="btn" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:10px" onclick="openForm('opname','${ed.id}')">⚖️ Sesuaikan stok (opname)</button>
@@ -545,6 +574,10 @@ async function delProduk(id){
   const used=[...db.beli,...db.jual,...(db.adj||[])].some(x=>x.produkId===id);
   if(used)return alert('Produk ini punya transaksi beli/jual/penyesuaian. Hapus dulu transaksinya, atau biarkan untuk menjaga riwayat HPP.');
   if(!confirm('Hapus produk ini?'))return;
+  const pr=db.produk.find(p=>p.id===id);
+  if(pr?.imageUrl){
+    await sb.storage.from('produk-images').remove([pr.imageUrl.split('/produk-images/')[1]]);
+  }
   const {error}=await sb.from('produk').delete().eq('id',id);
   if(error)return alert('Gagal menghapus: '+error.message);
   await loadAll();closeSheet();render();
@@ -571,8 +604,12 @@ async function saveForm(kind){
     res=await sb.from('beli').insert({tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,catatan:g('f_cat')});
     if(!res.error)await sb.from('produk').update({hpp:h}).eq('id',g('f_prod')); /* modal = harga beli terakhir */}
   else if(kind==='produk'){if(!g('f_nama'))return alert('Isi nama produk');
-    const payload={nama:g('f_nama'),kategori:g('f_kat2'),satuan:g('f_sat')||'pcs',hpp:+g('f_hpp')||0,stok_min:+g('f_min')||0,harga_jual:+g('f_jual')||0};
     const eid=g('f_id');
+    const file=document.getElementById('f_img')?.files[0];
+    let imageUrl=null;
+    if(file)imageUrl=await uploadImage(file,eid||'new');
+    const payload={nama:g('f_nama'),kategori:g('f_kat2'),satuan:g('f_sat')||'pcs',hpp:+g('f_hpp')||0,stok_min:+g('f_min')||0,harga_jual:+g('f_jual')||0};
+    if(imageUrl)payload.image_url=imageUrl;
     if(eid)res=await sb.from('produk').update(payload).eq('id',eid);
     else{payload.stok_awal=+g('f_awal')||0;res=await sb.from('produk').insert(payload);}}
   else if(kind==='opname'){const pr=db.produk.find(p=>p.id===g('f_id'));const fisik=+g('f_fisik');
