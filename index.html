@@ -341,7 +341,7 @@ async function loadAll(){
   ]);
   const err=[pr,am,ju,op,be,ad,ds].find(r=>r.error);
   if(err){alert('Gagal memuat data: '+err.error.message);return;}
-  db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,hargaJual:+r.harga_jual,stokMin:+r.stok_min,stokAwal:+r.stok_awal,imageUrl:r.image_url,stok:0}));
+  db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,hargaJual:+r.harga_jual,stokMin:+r.stok_min,stokAwal:+r.stok_awal,imageUrl:r.image_url,createdAt:r.created_at,stok:0}));
   db.amplop=(am.data||[]).map(r=>({id:r.id,tgl:r.tgl,sumber:r.sumber,jumlah:+r.jumlah,catatan:r.catatan}));
   db.jual=(ju.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,qty:+r.qty,harga:+r.harga,hppSnapshot:+r.hpp_snapshot,catatan:r.catatan}));
   db.ops=(op.data||[]).map(r=>({id:r.id,tgl:r.tgl,nama:r.nama,jumlah:+r.jumlah,kategori:r.kategori,catatan:r.catatan}));
@@ -686,6 +686,7 @@ function openProdukDetail(id){
       <div style="flex:1">
         <div style="font-family:Fraunces;font-size:20px;font-weight:600">${p.nama}</div>
         <div style="font-size:12px;color:var(--ink-soft)">${p.kategori} · ${p.satuan}</div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:2px">Ditambahkan ${p.createdAt?fdate(p.createdAt.slice(0,10)):'—'}</div>
       </div>
       <div style="text-align:right">
         <div style="font-family:Fraunces;font-size:22px;font-weight:600">${p.stok}</div>
