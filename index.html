@@ -433,10 +433,7 @@ function vDash(){
   <h2 class="sec">Stok perlu perhatian</h2>
   ${stockAlerts()}
 
-  <div class="two" style="margin-top:18px">
-    <button class="tinybtn" style="padding:13px;border-radius:13px" onclick="exportData()">⬇️ Ekspor data</button>
-  </div>
-  <div style="height:8px"></div>
+  <div style="height:24px"></div>
   `;
 }
 
@@ -647,7 +644,7 @@ function vStok(){
   return `<h2 class="sec">Stok Barang</h2>
   <div class="search-wrap"><input placeholder="Cari produk..." value="${srchStok}" oninput="srchStok=this.value;renderList('stok')"></div>
   <div class="card" id="list-stok">${listStokItems()}</div>
-  <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e);margin-top:14px" onclick="openForm('produk')">+ Tambah produk</button>`;
+  <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e);margin-top:16px" onclick="openForm('produk')">+ Tambah produk</button>`;
 }
 
 /* ---------- riwayat per produk ---------- */
@@ -756,10 +753,67 @@ function vSetting(){
   </div>
 
   <div class="card" style="padding:16px;margin-bottom:14px">
-    <div style="font-weight:700;font-size:14px;margin-bottom:12px">💾 Data</div>
-    <button class="tinybtn" style="width:100%;padding:13px;border-radius:13px" onclick="exportData()">⬇️ Ekspor backup JSON</button>
+    <div style="font-weight:700;font-size:14px;margin-bottom:12px">💾 Ekspor Data Lengkap</div>
+    <label>Filter</label>
+    <select id="st_exp_filter" style="margin-bottom:12px" onchange="updateExportFilter()">
+      <option value="all">Semua data</option>
+      <option value="7d">7 hari terakhir</option>
+      <option value="month">Per bulan</option>
+      <option value="custom">Custom range</option>
+    </select>
+    <div id="st_exp_month" style="display:none;margin-bottom:12px">
+      <label>Pilih bulan</label>
+      <select id="st_exp_month_select" style="margin-bottom:12px">${allMonths().map(m=>\`<option value="\${m}">\${idMonth(m)}</option>\`).join('')}</select>
+    </div>
+    <div id="st_exp_custom" style="display:none;margin-bottom:12px">
+      <label>Dari tanggal</label><input type="date" id="st_exp_from">
+      <label>Sampai tanggal</label><input type="date" id="st_exp_to" style="margin-bottom:12px">
+    </div>
+    <button class="btn" onclick="doExportFiltered()">⬇️ Ekspor JSON</button>
   </div>`;
 }
+
+function updateExportFilter(){
+  const f=document.getElementById('st_exp_filter').value;
+  document.getElementById('st_exp_month').style.display=f==='month'?'block':'none';
+  document.getElementById('st_exp_custom').style.display=f==='custom'?'block':'none';
+}
+window.updateExportFilter=updateExportFilter;
+
+function doExportFiltered(){
+  const f=document.getElementById('st_exp_filter').value;
+  let filtered={produk:db.produk,amplop:[],jual:[],ops:[],beli:[],adj:[]};
+
+  const now=new Date();
+  const day7ago=new Date(now.getTime()-7*24*60*60*1000).toISOString().slice(0,10);
+  const getRange=()=>{
+    if(f==='7d')return {from:day7ago,to:today()};
+    if(f==='month'){
+      const m=document.getElementById('st_exp_month_select').value;
+      const [y,mo]=m.split('-');
+      const d1=new Date(y,mo-1,1).toISOString().slice(0,10);
+      const d2=new Date(y,mo,0).toISOString().slice(0,10);
+      return {from:d1,to:d2};
+    }
+    if(f==='custom')return {from:document.getElementById('st_exp_from').value,to:document.getElementById('st_exp_to').value};
+    return {from:'1900-01-01',to:'2999-12-31'};
+  };
+
+  const r=getRange();
+  if(!r.from||!r.to)return alert('Isi tanggal');
+
+  ['amplop','jual','ops','beli','adj'].forEach(k=>{
+    filtered[k]=db[k].filter(x=>x.tgl>=r.from&&x.tgl<=r.to);
+  });
+
+  const blob=new Blob([JSON.stringify(filtered,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='tabib-ahmad-export-'+today()+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+window.doExportFiltered=doExportFiltered;
 
 function saveIdentitas(){
   settings.namaUsaha=document.getElementById('st_nama').value.trim()||'Tabib Ahmad';
