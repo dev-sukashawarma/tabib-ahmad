@@ -41,7 +41,7 @@ body{
 .wrap{max-width:520px;margin:0 auto;padding:0 16px}
 header.app{
   padding:22px 16px 14px;max-width:520px;margin:0 auto;
-  display:flex;align-items:center;gap:13px;
+  display:flex;align-items:center;gap:13px;position:relative;
 }
 .mark{
   width:48px;height:48px;border-radius:15px;flex:none;
@@ -182,8 +182,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
     <h1 id="appName">Tabib Ahmad</h1>
     <p id="appTagline">Keuangan &amp; Stok Herbal</p>
   </div>
-  <select id="period" class="period"></select>
-  <button onclick="doLogout()" style="position:absolute;right:16px;top:16px;border:none;background:none;color:var(--ink-soft);font-size:18px;cursor:pointer;padding:6px">🚪</button>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <select id="period" class="period"></select>
+    <button onclick="doLogout()" style="border:none;background:none;color:var(--ink-soft);font-size:20px;cursor:pointer;padding:6px;flex:none" title="Logout">🚪</button>
+  </div>
 </header>
 
 <div id="login" style="display:none">
@@ -512,7 +514,7 @@ function chartTren(){
     const op=db.ops.filter(x=>x.tgl.slice(0,7)===m).reduce((s,x)=>s+x.jumlah,0);
     return ma+mp-hp-op;
   });
-  if(vals.length<2)return `<div class="empty" style="padding:14px">Tren muncul setelah ada ≥ 2 bulan data.</div>`;
+  if(vals.length<1)return `<div class="empty" style="padding:14px">Belum ada data transaksi.</div>`;
   const max=Math.max(...vals,1),min=Math.min(...vals,0),range=max-min||1;
   return `<div style="display:flex;align-items:stretch;gap:10px;height:140px">
     ${vals.map((v,i)=>{const h=Math.round((v-min)/range*100)+12;
