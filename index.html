@@ -511,12 +511,34 @@ function openQuickAddProduk(){
         <div><label>Harga modal (Rp)</label><input id="qp_hpp" type="number" inputmode="numeric" placeholder="0"></div>
         <div><label>Harga jual (Rp)</label><input id="qp_jual" type="number" inputmode="numeric" placeholder="0"></div>
       </div>
-      <label>Stok awal</label><input id="qp_awal" type="number" inputmode="numeric" value="0" style="margin-bottom:16px">
+      <label>Stok awal</label><input id="qp_awal" type="number" inputmode="numeric" value="0" style="margin-bottom:12px">
+      <label>Foto produk (opsional)</label>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
+          🖼️ Galeri<input type="file" id="qp_img" accept="image/jpeg,image/png" capture style="display:none" onchange="qpPreview(this)">
+        </label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
+          📷 Kamera<input type="file" id="qp_img_cam" accept="image/jpeg,image/png" capture="environment" style="display:none" onchange="qpPreview(this)">
+        </label>
+      </div>
+      <div id="qp_img_preview" style="margin-bottom:14px"></div>
       <button class="btn" onclick="saveQuickProduk()">Simpan & pilih produk</button>
       <button class="btn" onclick="document.getElementById('quick-produk-overlay').remove()" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:10px">Batal</button>
     </div>`;
   document.body.appendChild(overlay);
 }
+
+function qpPreview(input){
+  const file=input.files[0];
+  const el=document.getElementById('qp_img_preview');
+  if(!file){el.innerHTML='';return;}
+  // sync ke input lain agar saveQuickProduk baca satu sumber
+  window._qpFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{el.innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px">`};
+  reader.readAsDataURL(file);
+}
+window.qpPreview=qpPreview;
 
 async function saveQuickProduk(){
   const nama=document.getElementById('qp_nama')?.value.trim();
@@ -530,6 +552,13 @@ async function saveQuickProduk(){
     stok_min:5,
     stok_awal:+document.getElementById('qp_awal').value||0
   };
+  // upload gambar dulu jika ada
+  if(window._qpFile){
+    const tempId='tmp-'+Date.now();
+    const url=await uploadImage(window._qpFile,tempId);
+    if(url)payload.image_url=url;
+    window._qpFile=null;
+  }
   const {data,error}=await sb.from('produk').insert(payload).select().single();
   if(error)return alert('Gagal simpan: '+error.message);
   document.getElementById('quick-produk-overlay').remove();
