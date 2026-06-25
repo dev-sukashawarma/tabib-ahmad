@@ -200,14 +200,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
   <select id="period" class="period" style="width:100%"></select>
 </header>
 
-<div id="login" style="display:none">
-  <div style="position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px">
-    <div style="width:100%;max-width:360px;text-align:center">
-      <div style="width:64px;height:64px;border-radius:20px;font-size:34px;margin:0 auto 18px;background:linear-gradient(150deg,var(--herb),var(--herb-deep));display:grid;place-items:center;color:#f4efe4">ت</div>
-      <h2 style="font-family:Fraunces;font-weight:600;font-size:26px;margin:0 0 4px">Tabib Ahmad</h2>
-      <p style="margin:0 0 22px;color:var(--ink-soft);font-size:13.5px">Keuangan & Stok Herbal</p>
-      <div style="background:var(--card);padding:20px;text-align:left;border-radius:18px;border:1px solid var(--line)">
-        <div style="display:none" id="auth-form-login">
+<div id="login" style="position:fixed;inset:0;z-index:100;background:var(--bg);display:none;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:360px;text-align:center">
+    <div style="width:64px;height:64px;border-radius:20px;font-size:34px;margin:0 auto 18px;background:linear-gradient(150deg,var(--herb),var(--herb-deep));display:grid;place-items:center;color:#f4efe4">ت</div>
+    <h2 style="font-family:Fraunces;font-weight:600;font-size:26px;margin:0 0 4px">Tabib Ahmad</h2>
+    <p style="margin:0 0 22px;color:var(--ink-soft);font-size:13.5px">Keuangan & Stok Herbal</p>
+    <div style="background:var(--card);padding:20px;text-align:left;border-radius:18px;border:1px solid var(--line)">
+      <div id="auth-form-login">
           <label>Email</label><input id="lg_email" type="email" autocomplete="username" placeholder="email@contoh.com" style="margin-bottom:12px">
           <label>Password</label><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••••" style="margin-bottom:14px">
           <button class="btn" onclick="doLogin()">Masuk</button>
@@ -216,16 +215,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
           </div>
           <div style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600;text-align:center" id="lg_err"></div>
         </div>
-        <div style="display:none" id="auth-form-signup">
-          <label>Email</label><input id="sg_email" type="email" autocomplete="username" placeholder="email@contoh.com" style="margin-bottom:12px">
-          <label>Password</label><input id="sg_pass" type="password" autocomplete="new-password" placeholder="minimal 6 karakter" style="margin-bottom:12px">
-          <label>Konfirmasi Password</label><input id="sg_pass2" type="password" autocomplete="new-password" placeholder="••••••••" style="margin-bottom:14px">
-          <button class="btn" onclick="doSignup()">Daftar</button>
-          <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--ink-soft)">
-            Sudah punya akun? <button onclick="toggleAuthForm()" style="border:none;background:none;color:var(--herb);font-weight:600;cursor:pointer;padding:0">Login di sini</button>
-          </div>
-          <div style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600;text-align:center" id="sg_err"></div>
+      <div id="auth-form-signup" style="display:none">
+        <label>Email</label><input id="sg_email" type="email" autocomplete="username" placeholder="email@contoh.com" style="margin-bottom:12px">
+        <label>Password</label><input id="sg_pass" type="password" autocomplete="new-password" placeholder="minimal 6 karakter" style="margin-bottom:12px">
+        <label>Konfirmasi Password</label><input id="sg_pass2" type="password" autocomplete="new-password" placeholder="••••••••" style="margin-bottom:14px">
+        <button class="btn" onclick="doSignup()">Daftar</button>
+        <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--ink-soft)">
+          Sudah punya akun? <button onclick="toggleAuthForm()" style="border:none;background:none;color:var(--herb);font-weight:600;cursor:pointer;padding:0">Login di sini</button>
         </div>
+        <div style="color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600;text-align:center" id="sg_err"></div>
       </div>
     </div>
   </div>
@@ -298,7 +296,8 @@ async function doLogout(){
 window.doLogout=doLogout;
 
 function showLogin(){
-  document.getElementById('login').style.display='block';
+  document.getElementById('login').style.display='flex';
+  document.querySelector('header.app').style.display='none';
   document.getElementById('view').style.display='none';
   document.getElementById('auth-form-login').style.display='block';
   document.getElementById('auth-form-signup').style.display='none';
@@ -306,9 +305,10 @@ function showLogin(){
 
 async function enterApp(){
   const {data:{session}}=await sb.auth.getSession();
-  if(!session)return;
+  if(!session)return showLogin();
   currentUser=session.user;
   document.getElementById('login').style.display='none';
+  document.querySelector('header.app').style.display='';
   document.getElementById('view').style.display='block';
   await loadAll();
   period=allMonths()[0];
