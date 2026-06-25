@@ -1,0 +1,17 @@
+{
+  "name": "Tabib Ahmad",
+  "short_name": "Tabib Ahmad",
+  "description": "Keuangan & Stok Herbal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4efe4",
+  "theme_color": "#3c5a3c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%233c5a3c'/><text x='96' y='140' font-size='120' text-anchor='middle' fill='%23f4efe4' font-family='serif'>ت</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

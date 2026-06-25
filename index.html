@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Tabib Ahmad — Keuangan & Stok</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3c5a3c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -119,10 +123,13 @@ nav.tabs{
 }
 nav.tabs .in{max-width:520px;margin:0 auto;display:flex}
 nav.tabs button{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:6px 2px;color:var(--ink-soft);font-family:inherit;font-size:10.5px;font-weight:600;cursor:pointer;border-radius:12px}
+  padding:6px 2px;color:var(--ink-soft);font-family:inherit;font-size:10.5px;font-weight:600;cursor:pointer;border-radius:12px;position:relative}
 nav.tabs button svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8}
 nav.tabs button.on{color:var(--herb)}
 nav.tabs button.on svg{stroke:var(--herb)}
+.nav-badge{position:absolute;top:2px;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:9px;font-weight:800;
+  min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;
+  border:2px solid rgba(255,253,248,.92)}
 
 /* fab */
 .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:35;
@@ -152,10 +159,19 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
 .btn:active{transform:scale(.99)}
 .tinybtn{background:var(--herb-soft);color:var(--herb-deep);border:none;border-radius:9px;padding:7px 10px;font-family:inherit;font-weight:600;font-size:12px;cursor:pointer}
 
+/* search bar */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{padding-left:38px;background:var(--card)}
+.search-wrap:before{content:"🔍";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
+
+/* riwayat produk timeline */
+.tl-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot{width:8px;height:8px;border-radius:99px;margin-top:5px;flex:none}
+
 .fade{animation:fade .4s ease both}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .note{font-size:12px;color:var(--ink-soft);background:var(--herb-soft);border-radius:12px;padding:10px 12px;margin-top:12px}
-
 </style>
 </head>
 <body>
@@ -163,8 +179,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
 <header class="app">
   <div class="mark">ت</div>
   <div class="ti-wrap">
-    <h1>Tabib Ahmad</h1>
-    <p>Keuangan &amp; Stok Herbal</p>
+    <h1 id="appName">Tabib Ahmad</h1>
+    <p id="appTagline">Keuangan &amp; Stok Herbal</p>
   </div>
   <select id="period" class="period"></select>
 </header>
@@ -183,7 +199,20 @@ const RP = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
 
 /* ---------- Supabase ---------- */
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-let db = {produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[]};
+let db = {produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],memo:[]};
+
+/* ---------- Settings (localStorage) ---------- */
+let settings = JSON.parse(localStorage.getItem('ta_settings')||'{}');
+let KATEGORI_PRODUK = settings.kategoriProduk || ['Herbal','Konsumsi','Alat','Lainnya'];
+let KATEGORI_OPS = settings.kategoriOps || ['Perlengkapan','Peralatan','Promosi','Operasional','Sosial','Renovasi','Jasa','Lainnya'];
+function saveSettings(){localStorage.setItem('ta_settings',JSON.stringify(settings));}
+
+function applySettings(){
+  document.getElementById('appName').textContent = settings.namaUsaha || 'Tabib Ahmad';
+  document.getElementById('appTagline').textContent = settings.tagline || 'Keuangan & Stok Herbal';
+  KATEGORI_PRODUK = settings.kategoriProduk || ['Herbal','Konsumsi','Alat','Lainnya'];
+  KATEGORI_OPS = settings.kategoriOps || ['Perlengkapan','Peralatan','Promosi','Operasional','Sosial','Renovasi','Jasa','Lainnya'];
+}
 
 async function loadAll(){
   const [pr,am,ju,op,be,ad] = await Promise.all([
@@ -202,11 +231,10 @@ async function loadAll(){
   db.ops=(op.data||[]).map(r=>({id:r.id,tgl:r.tgl,nama:r.nama,jumlah:+r.jumlah,kategori:r.kategori,catatan:r.catatan}));
   db.beli=(be.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,qty:+r.qty,harga:+r.harga,catatan:r.catatan}));
   db.adj=(ad.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,delta:+r.delta,catatan:r.catatan}));
+  db.memo = JSON.parse(localStorage.getItem('ta_memo')||'[]');
   rebuild(db);
 }
 
-/* HPP = harga modal manual per produk (sederhana). rebuild hanya hitung ulang stok
-   dari (total beli - total jual). HPP tidak diutak-atik di sini. */
 function rebuild(db){
   if(!db.adj)db.adj=[];
   db.produk.forEach(pr=>{
@@ -244,15 +272,21 @@ function totals(){
   return {masukAmplop,masukProduk,pemasukan,hpp,opsTotal,beliTotal,laba,aset};
 }
 
+/* ---------- stok alert count (untuk badge nav) ---------- */
+function alertCount(){return db.produk.filter(p=>p.stok<=p.stokMin).length;}
+
+/* ---------- search state ---------- */
+let srchMasuk='', srchKeluar='', srchStok='';
+
 /* ---------- views ---------- */
 let tab='dash';
 function render(){
   document.getElementById('period').innerHTML = allMonths().map(m=>`<option ${m===period?'selected':''} value="${m}">${idMonth(m)}</option>`).join('');
   const v=document.getElementById('view');
-  v.innerHTML = ({dash:vDash,masuk:vMasuk,keluar:vKeluar,stok:vStok})[tab]();
+  v.innerHTML = ({dash:vDash,masuk:vMasuk,keluar:vKeluar,stok:vStok,memo:vMemo,setting:vSetting})[tab]();
   v.classList.remove('fade');void v.offsetWidth;v.classList.add('fade');
   renderNav();
-  document.getElementById('fab').style.display = tab==='dash'?'none':'grid';
+  document.getElementById('fab').style.display = (tab==='dash'||tab==='setting')?'none':'grid';
 }
 
 function vDash(){
@@ -291,7 +325,7 @@ function vDash(){
   `;
 }
 
-/* ---------- charts (SVG murni) ---------- */
+/* ---------- charts ---------- */
 function chartBars(t){
   const data=[['Pemasukan',t.pemasukan,'var(--green)'],['HPP',t.hpp,'var(--amber)'],
     ['Operasional',t.opsTotal,'var(--red)'],['Laba',Math.max(t.laba,0),'var(--herb)']];
@@ -345,6 +379,7 @@ function exportData(){
   a.download='tabib-ahmad-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href);
 }
 window.exportData=exportData;
+
 function stockAlerts(){
   const rows=db.produk.filter(p=>p.stok<=p.stokMin).sort((a,b)=>a.stok-b.stok);
   if(!rows.length) return `<div class="card"><div class="empty">Semua stok aman 🌿</div></div>`;
@@ -356,6 +391,7 @@ function stockAlerts(){
   }).join('')}</div>`;
 }
 
+/* ---------- MASUK ---------- */
 let masukTab='amplop';
 function vMasuk(){
   return `<h2 class="sec">Pemasukan</h2>
@@ -363,23 +399,27 @@ function vMasuk(){
     <button class="${masukTab==='amplop'?'on':''}" onclick="setSub('masukTab','amplop')">💛 Amplop</button>
     <button class="${masukTab==='produk'?'on':''}" onclick="setSub('masukTab','produk')">💚 Produk</button>
   </div>
-  <div class="card">${masukTab==='amplop'?listAmplop():listJual()}</div>`;
+  <div class="search-wrap"><input placeholder="Cari..." value="${srchMasuk}" oninput="srchMasuk=this.value;renderList('masuk')"></div>
+  <div class="card" id="list-masuk">${masukTab==='amplop'?listAmplop():listJual()}</div>`;
 }
 function listAmplop(){
-  const r=db.amplop.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  let r=db.amplop.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  if(srchMasuk)r=r.filter(x=>(x.sumber||'').toLowerCase().includes(srchMasuk.toLowerCase())||(x.catatan||'').toLowerCase().includes(srchMasuk.toLowerCase()));
   if(!r.length)return emptyRow();
   return r.map(x=>`<div class="row"><div class="ic">🤲</div>
     <div><div class="ti">${x.sumber||'(tanpa nama)'}</div><div class="me">${fdate(x.tgl)}${x.catatan?' · '+x.catatan:''}</div></div>
     <div class="amt in">${RP(x.jumlah)}</div>${delBtn('amplop',x.id)}</div>`).join('');
 }
 function listJual(){
-  const r=db.jual.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  let r=db.jual.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  if(srchMasuk)r=r.filter(x=>nameOf(x.produkId).toLowerCase().includes(srchMasuk.toLowerCase())||(x.catatan||'').toLowerCase().includes(srchMasuk.toLowerCase()));
   if(!r.length)return emptyRow();
   return r.map(x=>`<div class="row"><div class="ic">🛒</div>
     <div><div class="ti">${nameOf(x.produkId)}</div><div class="me">${fdate(x.tgl)} · ${x.qty} × ${RP(x.harga)}</div></div>
     <div class="amt in">${RP(x.qty*x.harga)}<small>HPP ${RP(x.qty*(x.hppSnapshot||0))}</small></div>${delBtn('jual',x.id)}</div>`).join('');
 }
 
+/* ---------- KELUAR ---------- */
 let keluarTab='ops';
 function vKeluar(){
   return `<h2 class="sec">Pengeluaran</h2>
@@ -387,57 +427,214 @@ function vKeluar(){
     <button class="${keluarTab==='ops'?'on':''}" onclick="setSub('keluarTab','ops')">🔴 Operasional</button>
     <button class="${keluarTab==='beli'?'on':''}" onclick="setSub('keluarTab','beli')">🔵 Beli Stok</button>
   </div>
-  <div class="card">${keluarTab==='ops'?listOps():listBeli()}</div>`;
+  <div class="search-wrap"><input placeholder="Cari..." value="${srchKeluar}" oninput="srchKeluar=this.value;renderList('keluar')"></div>
+  <div class="card" id="list-keluar">${keluarTab==='ops'?listOps():listBeli()}</div>`;
 }
 function listOps(){
-  const r=db.ops.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  let r=db.ops.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  if(srchKeluar)r=r.filter(x=>x.nama.toLowerCase().includes(srchKeluar.toLowerCase())||x.kategori.toLowerCase().includes(srchKeluar.toLowerCase()));
   if(!r.length)return emptyRow();
   return r.map(x=>`<div class="row"><div class="ic red">🧾</div>
     <div><div class="ti">${x.nama}</div><div class="me">${fdate(x.tgl)} · <span class="pill">${x.kategori}</span></div></div>
     <div class="amt out">${RP(x.jumlah)}</div>${delBtn('ops',x.id)}</div>`).join('');
 }
 function listBeli(){
-  const r=db.beli.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  let r=db.beli.filter(x=>inP(x.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  if(srchKeluar)r=r.filter(x=>nameOf(x.produkId).toLowerCase().includes(srchKeluar.toLowerCase()));
   if(!r.length)return emptyRow();
   return r.map(x=>`<div class="row"><div class="ic amber">📥</div>
     <div><div class="ti">${nameOf(x.produkId)}</div><div class="me">${fdate(x.tgl)} · ${x.qty} × ${RP(x.harga)}</div></div>
     <div class="amt out">${RP(x.qty*x.harga)}<small>+ stok</small></div>${delBtn('beli',x.id)}</div>`).join('');
 }
 
-const KATEGORI=['Herbal','Konsumsi','Alat','Lainnya'];
+/* update list tanpa full render */
+function renderList(which){
+  if(which==='masuk'){const el=document.getElementById('list-masuk');if(el)el.innerHTML=masukTab==='amplop'?listAmplop():listJual();}
+  if(which==='keluar'){const el=document.getElementById('list-keluar');if(el)el.innerHTML=keluarTab==='ops'?listOps():listBeli();}
+  if(which==='stok'){const el=document.getElementById('list-stok');if(el)el.innerHTML=listStokItems();}
+}
+window.renderList=renderList;
+
+/* ---------- STOK ---------- */
 function prodRow(p){
   const out=p.stok<=0,low=p.stok>0&&p.stok<=p.stokMin;
   const cls=out?'b-out':low?'b-low':'b-ok', txt=out?(p.stok<0?'minus':'habis'):low?'menipis':'aman';
   const thumb=p.imageUrl?`<img src="${p.imageUrl}" style="width:40px;height:40px;border-radius:12px;object-fit:cover" alt="${p.nama}">`:'📦';
-  return `<div class="row" style="cursor:pointer" onclick="openForm('produk','${p.id}')"><div class="ic">${thumb}</div>
+  return `<div class="row" style="cursor:pointer" onclick="openProdukDetail('${p.id}')"><div class="ic">${thumb}</div>
     <div><div class="ti">${p.nama} <span class="muted" style="font-weight:500;font-size:12px">›</span></div><div class="me">Modal ${RP(p.hpp)} · jual ${RP(p.hargaJual)}</div></div>
     <div class="amt">${p.stok} ${p.satuan}<small><span class="badge ${cls}">${txt}</span></small></div></div>`;
 }
+
+function listStokItems(){
+  let prods=db.produk;
+  if(srchStok)prods=prods.filter(p=>p.nama.toLowerCase().includes(srchStok.toLowerCase()));
+  if(!prods.length)return `<div class="empty">Tidak ada produk ditemukan.</div>`;
+  const groups={};prods.forEach(p=>{(groups[p.kategori||'Lainnya']=groups[p.kategori||'Lainnya']||[]).push(p)});
+  const order=[...KATEGORI_PRODUK.filter(k=>groups[k]),...Object.keys(groups).filter(k=>!KATEGORI_PRODUK.includes(k))];
+  return order.map(k=>`<div style="margin-bottom:6px">
+    <div style="padding:10px 15px 4px;font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase">${k}</div>
+    ${groups[k].map(prodRow).join('')}</div>`).join('');
+}
+
 function vStok(){
   if(!db.produk.length)return `<h2 class="sec">Stok Barang</h2><div class="card">${emptyRow()}</div>
     <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e)" onclick="openForm('produk')">+ Tambah produk</button>`;
-  const groups={};db.produk.forEach(p=>{(groups[p.kategori||'Lainnya']=groups[p.kategori||'Lainnya']||[]).push(p)});
-  const order=[...KATEGORI.filter(k=>groups[k]),...Object.keys(groups).filter(k=>!KATEGORI.includes(k))];
   return `<h2 class="sec">Stok Barang</h2>
-  <div class="muted" style="font-size:12.5px;margin:0 2px 10px">Ketuk produk untuk edit, sesuaikan stok, atau hapus.</div>
-  ${order.map(k=>`<div style="margin-bottom:14px"><div class="pill" style="margin:0 0 8px 2px">${k}</div>
-    <div class="card">${groups[k].map(prodRow).join('')}</div></div>`).join('')}
-  <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e)" onclick="openForm('produk')">+ Tambah produk</button>`;
+  <div class="search-wrap"><input placeholder="Cari produk..." value="${srchStok}" oninput="srchStok=this.value;renderList('stok')"></div>
+  <div class="card" id="list-stok">${listStokItems()}</div>
+  <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e);margin-top:14px" onclick="openForm('produk')">+ Tambah produk</button>`;
 }
+
+/* ---------- riwayat per produk ---------- */
+function openProdukDetail(id){
+  const p=db.produk.find(x=>x.id===id);
+  if(!p)return;
+
+  const riwayat=[];
+  db.beli.filter(x=>x.produkId===id).forEach(x=>riwayat.push({tgl:x.tgl,tipe:'beli',qty:x.qty,harga:x.harga,catatan:x.catatan}));
+  db.jual.filter(x=>x.produkId===id).forEach(x=>riwayat.push({tgl:x.tgl,tipe:'jual',qty:x.qty,harga:x.harga,catatan:x.catatan}));
+  db.adj.filter(x=>x.produkId===id).forEach(x=>riwayat.push({tgl:x.tgl,tipe:'adj',delta:x.delta,catatan:x.catatan}));
+  riwayat.sort((a,b)=>b.tgl.localeCompare(a.tgl));
+
+  const thumb=p.imageUrl?`<img src="${p.imageUrl}" style="width:100%;max-height:180px;object-fit:cover;border-radius:14px;margin-bottom:14px">`:'';
+  const out=p.stok<=0,low=p.stok>0&&p.stok<=p.stokMin;
+  const cls=out?'b-out':low?'b-low':'b-ok',txt=out?(p.stok<0?'minus':'habis'):low?'menipis':'aman';
+
+  const tlRows=riwayat.length?riwayat.map(r=>{
+    const [color,icon,label]=r.tipe==='beli'?['var(--green)','📥','Beli +'+r.qty]:
+      r.tipe==='jual'?['var(--red)','🛒','Jual −'+r.qty]:
+      [r.delta>0?'var(--green)':'var(--amber)','⚖️','Opname '+(r.delta>0?'+':'')+r.delta];
+    const nilai=r.tipe==='adj'?'':(r.qty*(r.harga||0));
+    return `<div class="tl-item">
+      <div class="tl-dot" style="background:${color}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13.5px">${icon} ${label} ${p.satuan}</div>
+        <div style="font-size:12px;color:var(--ink-soft)">${fdate(r.tgl)}${r.catatan?' · '+r.catatan:''}</div>
+      </div>
+      ${nilai?`<div style="font-weight:700;font-size:13px;color:${r.tipe==='beli'?'var(--amber)':'var(--green)'}">${RP(nilai)}</div>`:''}
+    </div>`;
+  }).join(''):`<div class="empty" style="padding:20px">Belum ada riwayat transaksi.</div>`;
+
+  openSheet(`
+    ${thumb}
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="flex:1">
+        <div style="font-family:Fraunces;font-size:20px;font-weight:600">${p.nama}</div>
+        <div style="font-size:12px;color:var(--ink-soft)">${p.kategori} · ${p.satuan}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:Fraunces;font-size:22px;font-weight:600">${p.stok}</div>
+        <span class="badge ${cls}">${txt}</span>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="card stat"><div class="k">Modal/HPP</div><div class="v" style="font-size:16px">${RP(p.hpp)}</div></div>
+      <div class="card stat"><div class="k">Harga Jual</div><div class="v" style="font-size:16px">${RP(p.hargaJual)}</div></div>
+    </div>
+    <h3 style="margin:0 0 10px">Riwayat Transaksi</h3>
+    <div class="card" style="padding:4px 14px">${tlRows}</div>
+    <button class="btn" style="margin-top:14px" onclick="closeSheet();openForm('produk','${p.id}')">✏️ Edit Produk</button>
+    <button class="btn" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:10px" onclick="closeSheet();openForm('opname','${p.id}')">⚖️ Sesuaikan stok</button>
+  `);
+}
+window.openProdukDetail=openProdukDetail;
+
+/* ---------- MEMO ---------- */
+function vMemo(){
+  const memos=db.memo.filter(m=>inP(m.tgl)).sort((a,b)=>b.tgl.localeCompare(a.tgl)||b.id-a.id);
+  const rows=memos.length?memos.map(m=>`
+    <div class="row" style="align-items:flex-start">
+      <div class="ic" style="font-size:20px;background:var(--amber-soft)">📝</div>
+      <div style="flex:1;min-width:0">
+        <div class="ti" style="white-space:pre-wrap;word-break:break-word">${m.teks}</div>
+        <div class="me">${fdate(m.tgl)}</div>
+      </div>
+      <button class="del" onclick="delMemo(${m.id})">×</button>
+    </div>`).join(''):`<div class="empty">Belum ada catatan bulan ini.<br>Ketuk + untuk menulis.</div>`;
+  return `<h2 class="sec">Catatan & Memo</h2>
+  <div class="card">${rows}</div>`;
+}
+
+function delMemo(id){
+  if(!confirm('Hapus catatan ini?'))return;
+  db.memo=db.memo.filter(m=>m.id!==id);
+  localStorage.setItem('ta_memo',JSON.stringify(db.memo));
+  render();
+}
+window.delMemo=delMemo;
+
+/* ---------- PENGATURAN ---------- */
+function vSetting(){
+  return `<h2 class="sec">Pengaturan</h2>
+
+  <div class="card" style="padding:16px;margin-bottom:14px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:12px">🏷️ Identitas Usaha</div>
+    <label>Nama usaha</label>
+    <input id="st_nama" value="${settings.namaUsaha||'Tabib Ahmad'}">
+    <label>Tagline</label>
+    <input id="st_tagline" value="${settings.tagline||'Keuangan & Stok Herbal'}">
+    <button class="btn" style="margin-top:14px" onclick="saveIdentitas()">Simpan</button>
+  </div>
+
+  <div class="card" style="padding:16px;margin-bottom:14px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:4px">🏷️ Kategori Produk</div>
+    <div style="font-size:12px;color:var(--ink-soft);margin-bottom:12px">Satu kategori per baris</div>
+    <textarea id="st_katprod" rows="5" style="font-size:13px">${KATEGORI_PRODUK.join('\n')}</textarea>
+    <button class="btn" style="margin-top:14px" onclick="saveKatProduk()">Simpan kategori produk</button>
+  </div>
+
+  <div class="card" style="padding:16px;margin-bottom:14px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:4px">🏷️ Kategori Pengeluaran</div>
+    <div style="font-size:12px;color:var(--ink-soft);margin-bottom:12px">Satu kategori per baris</div>
+    <textarea id="st_katops" rows="6" style="font-size:13px">${KATEGORI_OPS.join('\n')}</textarea>
+    <button class="btn" style="margin-top:14px" onclick="saveKatOps()">Simpan kategori pengeluaran</button>
+  </div>
+
+  <div class="card" style="padding:16px;margin-bottom:14px">
+    <div style="font-weight:700;font-size:14px;margin-bottom:12px">💾 Data</div>
+    <button class="tinybtn" style="width:100%;padding:13px;border-radius:13px" onclick="exportData()">⬇️ Ekspor backup JSON</button>
+  </div>`;
+}
+
+function saveIdentitas(){
+  settings.namaUsaha=document.getElementById('st_nama').value.trim()||'Tabib Ahmad';
+  settings.tagline=document.getElementById('st_tagline').value.trim()||'Keuangan & Stok Herbal';
+  saveSettings();applySettings();
+  alert('Tersimpan!');
+}
+function saveKatProduk(){
+  const list=document.getElementById('st_katprod').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!list.length)return alert('Minimal 1 kategori');
+  settings.kategoriProduk=list;saveSettings();applySettings();
+  alert('Kategori produk tersimpan!');
+}
+function saveKatOps(){
+  const list=document.getElementById('st_katops').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!list.length)return alert('Minimal 1 kategori');
+  settings.kategoriOps=list;saveSettings();applySettings();
+  alert('Kategori pengeluaran tersimpan!');
+}
+window.saveIdentitas=saveIdentitas;window.saveKatProduk=saveKatProduk;window.saveKatOps=saveKatOps;
 
 function emptyRow(){return `<div class="empty">Belum ada data untuk ${idMonth(period)}.<br>Ketuk tombol + untuk menambah.</div>`;}
 function delBtn(coll,id){return `<button class="del" onclick="del('${coll}','${id}')">×</button>`;}
 
 /* ---------- nav ---------- */
 function renderNav(){
+  const ac=alertCount();
   const items=[
-    ['dash','Beranda','M3 12l9-9 9 9M5 10v10h14V10'],
-    ['masuk','Masuk','M12 19V5M5 12l7-7 7 7'],
-    ['keluar','Keluar','M12 5v14M5 12l7 7 7-7'],
-    ['stok','Stok','M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7'],
+    ['dash','Beranda','M3 12l9-9 9 9M5 10v10h14V10',0],
+    ['masuk','Masuk','M12 19V5M5 12l7-7 7 7',0],
+    ['keluar','Keluar','M12 5v14M5 12l7 7 7-7',0],
+    ['stok','Stok','M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7',ac],
+    ['memo','Memo','M9 12h6M9 16h4M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',0],
+    ['setting','Atur','M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',0],
   ];
-  document.getElementById('nav').innerHTML = items.map(([k,l,d])=>
-    `<button class="${tab===k?'on':''}" onclick="go('${k}')"><svg viewBox="0 0 24 24"><path d="${d}" stroke-linecap="round" stroke-linejoin="round"/></svg>${l}</button>`).join('');
+  document.getElementById('nav').innerHTML = items.map(([k,l,d,badge])=>
+    `<button class="${tab===k?'on':''}" onclick="go('${k}')">
+      ${badge?`<span class="nav-badge">${badge}</span>`:''}
+      <svg viewBox="0 0 24 24"><path d="${d}" stroke-linecap="round" stroke-linejoin="round"/></svg>${l}
+    </button>`).join('');
 }
 function go(t){tab=t;render()}
 function setSub(which,val){if(which==='masukTab')masukTab=val;else if(which==='keluarTab')keluarTab=val;render();}
@@ -463,6 +660,7 @@ document.getElementById('fab').onclick=()=>{
   if(tab==='masuk')openForm(masukTab==='amplop'?'amplop':'jual');
   else if(tab==='keluar')openForm(keluarTab==='ops'?'ops':'beli');
   else if(tab==='stok')openForm('produk');
+  else if(tab==='memo')openForm('memo');
 };
 
 const today=()=>new Date().toISOString().slice(0,10);
@@ -472,14 +670,12 @@ function prodOptions(sel){return db.produk.map(p=>`<option value="${p.id}" ${p.i
 async function uploadImage(file,produkId){
   if(!file)return null;
   const allowed=['image/jpeg','image/png'];
-  if(!allowed.includes(file.type))return alert('Format hanya jpg/jpeg/png');
-  if(file.size>5*1024*1024)return alert('Ukuran max 5MB');
-
+  if(!allowed.includes(file.type)){alert('Format hanya jpg/jpeg/png');return null;}
+  if(file.size>5*1024*1024){alert('Ukuran max 5MB');return null;}
   const ext=file.name.slice(file.name.lastIndexOf('.'));
   const path=`produk/${produkId}/${Date.now()}${ext}`;
-  const {data,error}=await sb.storage.from('produk-images').upload(path,file,{upsert:false});
-  if(error)return alert('Upload gagal: '+error.message);
-
+  const {error}=await sb.storage.from('produk-images').upload(path,file,{upsert:true});
+  if(error){alert('Upload gagal: '+error.message);return null;}
   const {data:{publicUrl}}=sb.storage.from('produk-images').getPublicUrl(path);
   return publicUrl;
 }
@@ -499,12 +695,12 @@ function openQuickAddProduk(){
   overlay.id='quick-produk-overlay';
   overlay.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end';
   overlay.innerHTML=`
-    <div style="background:var(--card);border-radius:24px 24px 0 0;padding:24px;width:100%;max-height:80vh;overflow-y:auto">
-      <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px"></div>
+    <div style="background:var(--card);border-radius:24px 24px 0 0;padding:24px;width:100%;max-height:85vh;overflow-y:auto">
+      <div style="width:40px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 20px"></div>
       <h3 style="margin:0 0 16px;font-family:Fraunces;font-size:20px">📦 Tambah Produk Baru</h3>
       <label>Nama produk</label><input id="qp_nama" placeholder="Mis. Minyak Habbatussauda" style="margin-bottom:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><label>Kategori</label><select id="qp_kat">${KATEGORI.map(k=>`<option>${k}</option>`).join('')}</select></div>
+        <div><label>Kategori</label><select id="qp_kat">${KATEGORI_PRODUK.map(k=>`<option>${k}</option>`).join('')}</select></div>
         <div><label>Satuan</label><input id="qp_sat" placeholder="pcs / botol / kg" value="pcs"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
@@ -514,10 +710,10 @@ function openQuickAddProduk(){
       <label>Stok awal</label><input id="qp_awal" type="number" inputmode="numeric" value="0" style="margin-bottom:12px">
       <label>Foto produk (opsional)</label>
       <div style="display:flex;gap:10px;margin-bottom:12px">
-        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
-          🖼️ Galeri<input type="file" id="qp_img" accept="image/jpeg,image/png" capture style="display:none" onchange="qpPreview(this)">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
+          🖼️ Galeri<input type="file" id="qp_img" accept="image/jpeg,image/png" style="display:none" onchange="qpPreview(this)">
         </label>
-        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
           📷 Kamera<input type="file" id="qp_img_cam" accept="image/jpeg,image/png" capture="environment" style="display:none" onchange="qpPreview(this)">
         </label>
       </div>
@@ -532,7 +728,6 @@ function qpPreview(input){
   const file=input.files[0];
   const el=document.getElementById('qp_img_preview');
   if(!file){el.innerHTML='';return;}
-  // sync ke input lain agar saveQuickProduk baca satu sumber
   window._qpFile=file;
   const reader=new FileReader();
   reader.onload=e=>{el.innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px">`};
@@ -552,10 +747,8 @@ async function saveQuickProduk(){
     stok_min:5,
     stok_awal:+document.getElementById('qp_awal').value||0
   };
-  // upload gambar dulu jika ada
   if(window._qpFile){
-    const tempId='tmp-'+Date.now();
-    const url=await uploadImage(window._qpFile,tempId);
+    const url=await uploadImage(window._qpFile,'tmp-'+Date.now());
     if(url)payload.image_url=url;
     window._qpFile=null;
   }
@@ -563,9 +756,8 @@ async function saveQuickProduk(){
   if(error)return alert('Gagal simpan: '+error.message);
   document.getElementById('quick-produk-overlay').remove();
   await loadAll();
-  // refresh dropdown dan pilih produk baru
   const sel=document.getElementById('f_prod');
-  if(sel){sel.innerHTML=prodOptions(data.id);}
+  if(sel)sel.innerHTML=prodOptions(data.id);
 }
 window.openQuickAddProduk=openQuickAddProduk;
 window.saveQuickProduk=saveQuickProduk;
@@ -595,7 +787,7 @@ function openForm(kind,arg){
     <label>Nama pengeluaran</label><input id="f_nama" placeholder="Banner, cat, tukang…">
     <div class="two"><div><label>Jumlah (Rp)</label><input id="f_jumlah" type="number" inputmode="numeric"></div>
     <div><label>Kategori</label><select id="f_kat">
-      ${['Perlengkapan','Peralatan','Promosi','Operasional','Sosial','Renovasi','Jasa','Lainnya'].map(k=>`<option>${k}</option>`).join('')}
+      ${KATEGORI_OPS.map(k=>`<option>${k}</option>`).join('')}
     </select></div></div>
     <label>Catatan</label><input id="f_cat" placeholder="opsional">
     <button class="btn" onclick="saveForm('ops')">Simpan</button>`;
@@ -617,18 +809,25 @@ function openForm(kind,arg){
     h=`<h3>📦 ${ed?'Edit Produk':'Tambah Produk'}</h3>
     <input type="hidden" id="f_id" value="${ed?ed.id:''}">
     <label>Nama produk</label><input id="f_nama" placeholder="Mis. Minyak Habbatussauda" value="${ed?ed.nama:''}">
-    <div class="two"><div><label>Kategori</label><select id="f_kat2">${KATEGORI.map(k=>`<option ${ed&&ed.kategori===k?'selected':''}>${k}</option>`).join('')}</select></div>
+    <div class="two"><div><label>Kategori</label><select id="f_kat2">${KATEGORI_PRODUK.map(k=>`<option ${ed&&ed.kategori===k?'selected':''}>${k}</option>`).join('')}</select></div>
     <div><label>Satuan</label><input id="f_sat" placeholder="botol / pcs / kg" value="${ed?ed.satuan:'pcs'}"></div></div>
     <div class="two"><div><label>Harga modal / HPP (Rp)</label><input id="f_hpp" type="number" inputmode="numeric" placeholder="modal beli" value="${ed&&ed.hpp?ed.hpp:''}"></div>
     <div><label>Harga jual (Rp)</label><input id="f_jual" type="number" inputmode="numeric" placeholder="harga jual" value="${ed&&ed.hargaJual?ed.hargaJual:''}"></div></div>
     <div class="two"><div><label>Stok minimum</label><input id="f_min" type="number" inputmode="numeric" value="${ed?ed.stokMin:5}"></div>
     ${ed?'':`<div><label>Stok awal</label><input id="f_awal" type="number" inputmode="numeric" value="0"></div>`}</div>
     <label>Gambar produk (jpg/png, max 5MB)</label>
-    <input id="f_img" type="file" accept="image/jpeg,image/png" onchange="previewImage('f_img','f_img_preview')">
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--herb-deep)">
+        🖼️ Galeri<input type="file" id="f_img" accept="image/jpeg,image/png" style="display:none" onchange="previewImage('f_img','f_img_preview')">
+      </label>
+      <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--herb-deep)">
+        📷 Kamera<input type="file" id="f_img_cam" accept="image/jpeg,image/png" capture="environment" style="display:none" onchange="previewImage('f_img_cam','f_img_preview')">
+      </label>
+    </div>
     <div id="f_img_preview">${ed&&ed.imageUrl?`<img src="${ed.imageUrl}" style="max-width:120px;max-height:120px;border-radius:12px;margin-top:10px">`:''}</div>
     <div class="note">${ed?`Stok saat ini <b>${ed.stok} ${ed.satuan}</b> (otomatis dari Beli/Jual & penyesuaian). <b>Harga modal</b> dipakai untuk hitung laba; ikut terisi otomatis dari harga beli terakhir.`:'Isi stok awal jika barang sudah Anda punya. Selanjutnya stok bertambah lewat <b>Keluar › Beli Stok</b>.'}</div>
     <button class="btn" onclick="saveForm('produk')">Simpan produk</button>
-    ${ed?`<button class="btn" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:10px" onclick="openForm('opname','${ed.id}')">⚖️ Sesuaikan stok (opname)</button>
+    ${ed?`<button class="btn" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:10px" onclick="closeSheet();openProdukDetail('${ed.id}')">← Lihat riwayat</button>
     <button class="btn" style="background:var(--red);margin-top:10px" onclick="delProduk('${ed.id}')">Hapus produk</button>`:''}`;
   }
   else if(kind==='opname'){
@@ -640,6 +839,13 @@ function openForm(kind,arg){
     <label>Stok fisik sebenarnya (${pr.satuan})</label><input id="f_fisik" type="number" inputmode="numeric" value="${pr.stok}">
     <label>Alasan</label><input id="f_cat" placeholder="rusak, hilang, hitung ulang…">
     <button class="btn" onclick="saveForm('opname')">Simpan penyesuaian</button>`;
+  }
+  else if(kind==='memo'){
+    h=`<h3>📝 Tambah Catatan</h3>
+    <label>Tanggal</label><input type="date" id="f_tgl" value="${today()}">
+    <label>Isi catatan</label>
+    <textarea id="f_teks" rows="5" placeholder="Tulis catatan, pengingat, atau info penting…" style="resize:none"></textarea>
+    <button class="btn" onclick="saveForm('memo')">Simpan catatan</button>`;
   }
 
   openSheet(h);
@@ -679,10 +885,12 @@ async function saveForm(kind){
     res=await sb.from('jual').insert({tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,hpp_snapshot:pr?pr.hpp:0,catatan:g('f_cat')});}
   else if(kind==='beli'){const q=+g('f_qty'),h=+g('f_harga');if(!q||!h)return alert('Isi jumlah & harga');
     res=await sb.from('beli').insert({tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,catatan:g('f_cat')});
-    if(!res.error)await sb.from('produk').update({hpp:h}).eq('id',g('f_prod')); /* modal = harga beli terakhir */}
+    if(!res.error)await sb.from('produk').update({hpp:h}).eq('id',g('f_prod'));}
   else if(kind==='produk'){if(!g('f_nama'))return alert('Isi nama produk');
     const eid=g('f_id');
-    const file=document.getElementById('f_img')?.files[0];
+    const imgGaleri=document.getElementById('f_img')?.files[0];
+    const imgKamera=document.getElementById('f_img_cam')?.files[0];
+    const file=imgKamera||imgGaleri;
     let imageUrl=null;
     if(file)imageUrl=await uploadImage(file,eid||'new');
     const payload={nama:g('f_nama'),kategori:g('f_kat2'),satuan:g('f_sat')||'pcs',hpp:+g('f_hpp')||0,stok_min:+g('f_min')||0,harga_jual:+g('f_jual')||0};
@@ -692,6 +900,11 @@ async function saveForm(kind){
   else if(kind==='opname'){const pr=db.produk.find(p=>p.id===g('f_id'));const fisik=+g('f_fisik');
     const delta=fisik-pr.stok;if(delta===0){closeSheet();return;}
     res=await sb.from('adj').insert({tgl:g('f_tgl'),produk_id:pr.id,delta,catatan:g('f_cat')});}
+  else if(kind==='memo'){const teks=g('f_teks')?.trim();if(!teks)return alert('Isi catatan');
+    db.memo.push({id:Date.now(),tgl:g('f_tgl'),teks});
+    localStorage.setItem('ta_memo',JSON.stringify(db.memo));
+    closeSheet();render();return;}
+
   if(res&&res.error)return alert('Gagal menyimpan: '+res.error.message);
   await loadAll();
   const t=document.getElementById('f_tgl')?.value; if(t)period=t.slice(0,7);
@@ -701,9 +914,15 @@ window.saveForm=saveForm;
 
 document.getElementById('period').onchange=e=>{period=e.target.value;render();};
 
+/* ---------- PWA Service Worker ---------- */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
 /* ---------- INIT ---------- */
 (async function init(){
   if(SUPABASE_URL.includes('__')){document.body.innerHTML='<p style="font-family:sans-serif;padding:30px">⚠️ Konfigurasi Supabase belum diisi (SUPABASE_URL / SUPABASE_ANON).</p>';return;}
+  applySettings();
   await loadAll();
   period=allMonths()[0];
   render();
