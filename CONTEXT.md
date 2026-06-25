@@ -11,6 +11,12 @@ Uang masuk dari jasa & non-produk: ruqyah, bekam, infaq, donasi. Tidak terkait s
 ### Pemasukan Produk
 Uang masuk dari penjualan barang. Setiap transaksi mengurangi stok produk terkait.
 
+### Orderan Produk
+Satu penjualan yang berisi beberapa Produk sekaligus (multi-item) dengan satu Tanggal.
+Total Bayar dijumlah otomatis dari tiap item (qty × harga jual). Saat disimpan, tiap
+item menjadi satu Pemasukan Produk (stok masing-masing berkurang). Produk baru boleh
+dibuat langsung di dalam orderan bila belum ada.
+
 ### Pengeluaran Tabib
 Uang keluar untuk operasional usaha (perlengkapan, peralatan, promosi, renovasi,
 sosial, jasa). Tidak terkait stok. Punya Kategori.
