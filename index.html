@@ -643,13 +643,11 @@ function listStokItems(){
 
 function vStok(){
   if(!db.produk.length)return `<h2 class="sec">Stok Barang</h2><div class="card">${emptyRow()}</div>
-    <button class="btn" style="margin-top:14px" onclick="openOrderan()">🧾 Orderan produk</button>
-    <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e);margin-top:10px" onclick="openForm('produk')">+ Produk baru</button>`;
+    <button class="btn" style="margin-top:14px" onclick="openOrderan()">🧾 Orderan produk</button>`;
   return `<h2 class="sec">Stok Barang</h2>
   <div class="search-wrap"><input placeholder="Cari produk..." value="${srchStok}" oninput="srchStok=this.value;renderList('stok')"></div>
   <div class="card" id="list-stok">${listStokItems()}</div>
-  <button class="btn" style="margin-top:16px" onclick="openOrderan()">🧾 Orderan produk</button>
-  <button class="btn" style="background:linear-gradient(150deg,var(--amber),#9a5f1e);margin-top:10px" onclick="openForm('produk')">+ Produk baru</button>`;
+  <button class="btn" style="margin-top:16px" onclick="openOrderan()">🧾 Orderan produk</button>`;
 }
 
 /* ---------- riwayat per produk ---------- */
