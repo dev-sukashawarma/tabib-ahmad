@@ -440,7 +440,7 @@ function renderNav(){
     `<button class="${tab===k?'on':''}" onclick="go('${k}')"><svg viewBox="0 0 24 24"><path d="${d}" stroke-linecap="round" stroke-linejoin="round"/></svg>${l}</button>`).join('');
 }
 function go(t){tab=t;render()}
-function setSub(which,val){window[which]=val;render()}
+function setSub(which,val){if(which==='masukTab')masukTab=val;else if(which==='keluarTab')keluarTab=val;render();}
 window.go=go;window.setSub=setSub;
 
 /* ---------- delete ---------- */
