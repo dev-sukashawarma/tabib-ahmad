@@ -77,19 +77,6 @@ create table if not exists adj (
 );
 
 -- ============================================================
---  Row Level Security: tiap user hanya melihat datanya sendiri
+--  RLS: DISABLED (single-user, no authentication)
+--  Jika ingin keamanan nanti, enable RLS dan buat policies di dashboard Supabase.
 -- ============================================================
-do $$
-declare t text;
-begin
-  foreach t in array array['produk','amplop','jual','ops','beli','adj'] loop
-    execute format('alter table %I enable row level security;', t);
-    execute format('drop policy if exists own_rows on %I;', t);
-    execute format($f$
-      create policy own_rows on %I
-        for all
-        using (user_id = auth.uid())
-        with check (user_id = auth.uid());
-    $f$, t);
-  end loop;
-end $$;

@@ -157,18 +157,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .note{font-size:12px;color:var(--ink-soft);background:var(--herb-soft);border-radius:12px;padding:10px 12px;margin-top:12px}
 
-/* login */
-#login{position:fixed;inset:0;z-index:80;display:none;place-items:center;padding:24px;
-  background:radial-gradient(120% 80% at 100% 0%,rgba(202,165,74,.14),transparent 55%),
-   radial-gradient(100% 70% at 0% 100%,rgba(60,90,60,.14),transparent 50%),var(--bg)}
-#login.on{display:grid}
-#login .box{width:100%;max-width:360px;text-align:center}
-#login .mark{width:64px;height:64px;border-radius:20px;font-size:34px;margin:0 auto 18px}
-#login h2{font-family:'Fraunces';font-weight:600;font-size:26px;margin:0 0 4px;letter-spacing:-.02em}
-#login p{margin:0 0 22px;color:var(--ink-soft);font-size:13.5px}
-#login .card{padding:20px;text-align:left}
-#login .err{color:var(--red);font-size:12.5px;margin-top:10px;min-height:16px;font-weight:600;text-align:center}
-body.authing main,body.authing header.app,body.authing nav.tabs,body.authing .fab{display:none!important}
 </style>
 </head>
 <body>
@@ -181,18 +169,6 @@ body.authing main,body.authing header.app,body.authing nav.tabs,body.authing .fa
   </div>
   <select id="period" class="period"></select>
 </header>
-
-<div id="login"><div class="box">
-  <div class="mark">ت</div>
-  <h2>Tabib Ahmad</h2>
-  <p>Masuk untuk mengelola keuangan &amp; stok</p>
-  <div class="card">
-    <label>Email</label><input id="lg_email" type="email" autocomplete="username" placeholder="email@contoh.com">
-    <label>Password</label><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••••">
-    <button class="btn" id="lg_btn">Masuk</button>
-    <div class="err" id="lg_err"></div>
-  </div>
-</div></div>
 
 <main class="wrap" id="view"></main>
 
@@ -311,7 +287,6 @@ function vDash(){
 
   <div class="two" style="margin-top:18px">
     <button class="tinybtn" style="padding:13px;border-radius:13px" onclick="exportData()">⬇️ Ekspor data</button>
-    <button class="tinybtn" style="padding:13px;border-radius:13px;background:var(--red-soft);color:var(--red)" onclick="logout()">🚪 Keluar</button>
   </div>
   <div style="height:8px"></div>
   `;
@@ -612,26 +587,12 @@ window.saveForm=saveForm;
 
 document.getElementById('period').onchange=e=>{period=e.target.value;render();};
 
-/* ---------- AUTH ---------- */
-function showLogin(){document.body.classList.add('authing');document.getElementById('login').classList.add('on');}
-function hideLogin(){document.body.classList.remove('authing');document.getElementById('login').classList.remove('on');}
-async function enterApp(){hideLogin();await loadAll();period=allMonths()[0];render();}
-async function doLogin(){
-  const email=document.getElementById('lg_email').value.trim(),pass=document.getElementById('lg_pass').value;
-  const errEl=document.getElementById('lg_err');errEl.textContent='Memproses…';
-  const {error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error){errEl.textContent='Gagal masuk: '+error.message;return;}
-  errEl.textContent='';enterApp();
-}
-async function logout(){await sb.auth.signOut();db={produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[]};showLogin();}
-window.logout=logout;
-document.getElementById('lg_btn').onclick=doLogin;
-document.getElementById('lg_pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-
+/* ---------- INIT ---------- */
 (async function init(){
   if(SUPABASE_URL.includes('__')){document.body.innerHTML='<p style="font-family:sans-serif;padding:30px">⚠️ Konfigurasi Supabase belum diisi (SUPABASE_URL / SUPABASE_ANON).</p>';return;}
-  const {data:{session}}=await sb.auth.getSession();
-  if(session)enterApp();else showLogin();
+  await loadAll();
+  period=allMonths()[0];
+  render();
 })();
 </script>
 </body>

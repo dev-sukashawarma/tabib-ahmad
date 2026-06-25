@@ -2,20 +2,23 @@
 
 Aplikasi satu halaman (mobile-first) untuk mencatat pemasukan (amplop & produk),
 pengeluaran (operasional & beli stok), serta stok barang dengan HPP & laba.
-Backend: **Supabase** (Postgres + Auth). Login: **email + password**.
+Backend: **Supabase** (Postgres). **Tanpa login** — akses langsung, single-user.
 
 ## Setup (sekali saja)
 
-1. **Buat tabel** — di Supabase: SQL Editor → tempel isi [`supabase-schema.sql`](supabase-schema.sql) → Run.
+1. **Buat tabel** — di Supabase: SQL Editor → tempel isi [`supabase-schema.sql`](supabase-schema.sql) → **Run**.
+   (Tabel akan dibuat otomatis tanpa RLS.)
+
 2. **Isi kredensial** — di `index.html` bagian atas, ganti:
-   - `SUPABASE_URL` → Project URL
-   - `SUPABASE_ANON` → anon/public key
-   (Project Settings → API)
-3. **Buat akun login** — Authentication → Users → **Add user** (isi email & password
-   untuk Tabib Ahmad). Aplikasi sengaja tidak punya halaman daftar; akun dibuat di dashboard.
-4. **Buka** `index.html` (atau deploy ke hosting statis / GitHub Pages).
+   - `SUPABASE_URL` → Project URL (contoh: `https://xxxx.supabase.co`)
+   - `SUPABASE_ANON` → anon/public key (lihat Project Settings → API)
+
+3. **Buka** `index.html` di browser (atau deploy ke hosting statis).
+   → Langsung masuk ke aplikasi, tidak perlu login.
 
 ## Catatan
-- Semua data dilindungi Row Level Security — tiap user hanya melihat datanya sendiri.
-- Tombol **Ekspor data** mengunduh cadangan JSON.
+- Tanpa autentikasi — cocok untuk lokal/internal saja.
+- Tombol **Ekspor data** mengunduh cadangan JSON untuk backup.
 - HPP = harga modal per produk (otomatis terisi dari harga beli terakhir, bisa diedit).
+- Mode akuntansi: Laba = Pemasukan − HPP − Operasional. Stok belum terjual = aset.
+- Desain mobile-first, herbal theme.

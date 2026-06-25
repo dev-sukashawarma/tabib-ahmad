@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import pandas as pd; x=pd.read_excel\\(r'C:\\\\Users\\\\lu.DESKTOP-HRO3RNS\\\\Downloads\\\\Copy of Lap Keuangan Tabib Ahmad Juni 2026.xlsx', sheet_name=None\\); [print\\('===',k,'===', v.shape\\) for k,v in x.items\\(\\)]\")",
+      "Bash(python -c ' *)",
+      "Bash(python -m pip install openpyxl)",
+      "Bash(export PYTHONIOENCODING=utf-8)",
+      "Bash(gh auth *)",
+      "Bash(gh api *)",
+      "PowerShell($g=\\(Get-Command gh -ErrorAction SilentlyContinue\\); if\\($g\\){ gh auth status; gh api user --jq .login } else { \"gh NOT installed\" })"
+    ]
+  }
+}
