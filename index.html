@@ -763,7 +763,7 @@ function vSetting(){
     </select>
     <div id="st_exp_month" style="display:none;margin-bottom:12px">
       <label>Pilih bulan</label>
-      <select id="st_exp_month_select" style="margin-bottom:12px">${allMonths().map(m=>\`<option value="\${m}">\${idMonth(m)}</option>\`).join('')}</select>
+      <select id="st_exp_month_select" style="margin-bottom:12px">${allMonths().map(m=>`<option value="${m}">${idMonth(m)}</option>`).join('')}</select>
     </div>
     <div id="st_exp_custom" style="display:none;margin-bottom:12px">
       <label>Dari tanggal</label><input type="date" id="st_exp_from">
