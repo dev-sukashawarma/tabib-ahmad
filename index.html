@@ -493,6 +493,54 @@ function previewImage(fileInputId,previewId){
 }
 window.previewImage=previewImage;
 
+/* ---------- quick add produk dari form beli ---------- */
+function openQuickAddProduk(){
+  const overlay=document.createElement('div');
+  overlay.id='quick-produk-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end';
+  overlay.innerHTML=`
+    <div style="background:var(--card);border-radius:24px 24px 0 0;padding:24px;width:100%;max-height:80vh;overflow-y:auto">
+      <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px"></div>
+      <h3 style="margin:0 0 16px;font-family:Fraunces;font-size:20px">📦 Tambah Produk Baru</h3>
+      <label>Nama produk</label><input id="qp_nama" placeholder="Mis. Minyak Habbatussauda" style="margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div><label>Kategori</label><select id="qp_kat">${KATEGORI.map(k=>`<option>${k}</option>`).join('')}</select></div>
+        <div><label>Satuan</label><input id="qp_sat" placeholder="pcs / botol / kg" value="pcs"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div><label>Harga modal (Rp)</label><input id="qp_hpp" type="number" inputmode="numeric" placeholder="0"></div>
+        <div><label>Harga jual (Rp)</label><input id="qp_jual" type="number" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <label>Stok awal</label><input id="qp_awal" type="number" inputmode="numeric" value="0" style="margin-bottom:16px">
+      <button class="btn" onclick="saveQuickProduk()">Simpan & pilih produk</button>
+      <button class="btn" onclick="document.getElementById('quick-produk-overlay').remove()" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:10px">Batal</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveQuickProduk(){
+  const nama=document.getElementById('qp_nama')?.value.trim();
+  if(!nama)return alert('Isi nama produk');
+  const payload={
+    nama,
+    kategori:document.getElementById('qp_kat').value,
+    satuan:document.getElementById('qp_sat').value||'pcs',
+    hpp:+document.getElementById('qp_hpp').value||0,
+    harga_jual:+document.getElementById('qp_jual').value||0,
+    stok_min:5,
+    stok_awal:+document.getElementById('qp_awal').value||0
+  };
+  const {data,error}=await sb.from('produk').insert(payload).select().single();
+  if(error)return alert('Gagal simpan: '+error.message);
+  document.getElementById('quick-produk-overlay').remove();
+  await loadAll();
+  // refresh dropdown dan pilih produk baru
+  const sel=document.getElementById('f_prod');
+  if(sel){sel.innerHTML=prodOptions(data.id);}
+}
+window.openQuickAddProduk=openQuickAddProduk;
+window.saveQuickProduk=saveQuickProduk;
+
 function openForm(kind,arg){
   let h='';
   if(kind==='amplop')h=`<h3>💛 Pemasukan Amplop</h3>
@@ -527,7 +575,8 @@ function openForm(kind,arg){
     if(!db.produk.length)return openForm('produk');
     h=`<h3>🔵 Pembelian Stok</h3>
     <label>Tanggal</label><input type="date" id="f_tgl" value="${today()}">
-    <label>Produk</label><select id="f_prod">${prodOptions()}</select>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><label style="margin:0;flex:1">Produk</label><button type="button" onclick="openQuickAddProduk()" style="font-size:12px;padding:4px 10px;border-radius:8px;background:var(--herb-soft);color:var(--herb-deep);border:none;cursor:pointer;font-weight:600">+ Produk baru</button></div>
+    <select id="f_prod">${prodOptions()}</select>
     <div class="two"><div><label>Jumlah beli</label><input id="f_qty" type="number" inputmode="numeric" oninput="calcTot()" value="1"></div>
     <div><label>Harga beli / unit</label><input id="f_harga" type="number" inputmode="numeric" oninput="calcTot()"></div></div>
     <div class="hint" id="f_hint"></div>
