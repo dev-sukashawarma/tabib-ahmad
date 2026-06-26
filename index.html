@@ -642,12 +642,10 @@ function listStokItems(){
 }
 
 function vStok(){
-  if(!db.produk.length)return `<h2 class="sec">Stok Barang</h2><div class="card">${emptyRow()}</div>
-    <button class="btn" style="margin-top:14px" onclick="openOrderan()">🧾 Orderan produk</button>`;
+  if(!db.produk.length)return `<h2 class="sec">Stok Barang</h2><div class="card">${emptyRow()}</div>`;
   return `<h2 class="sec">Stok Barang</h2>
   <div class="search-wrap"><input placeholder="Cari produk..." value="${srchStok}" oninput="srchStok=this.value;renderList('stok')"></div>
-  <div class="card" id="list-stok">${listStokItems()}</div>
-  <button class="btn" style="margin-top:16px" onclick="openOrderan()">🧾 Orderan produk</button>`;
+  <div class="card" id="list-stok">${listStokItems()}</div>`;
 }
 
 /* ---------- riwayat per produk ---------- */
@@ -693,9 +691,8 @@ function openProdukDetail(id){
         <span class="badge ${cls}">${txt}</span>
       </div>
     </div>
-    <div class="grid2" style="margin-bottom:16px">
+    <div style="margin-bottom:16px">
       <div class="card stat"><div class="k">Modal/HPP</div><div class="v" style="font-size:16px">${RP(p.hpp)}</div></div>
-      <div class="card stat"><div class="k">Harga Jual</div><div class="v" style="font-size:16px">${RP(p.hargaJual)}</div></div>
     </div>
     <h3 style="margin:0 0 10px">Riwayat Transaksi</h3>
     <div class="card" style="padding:4px 14px">${tlRows}</div>
@@ -1215,7 +1212,6 @@ function openOrderan(){
     <label>Tanggal</label><input type="date" id="o_tgl" value="${today()}">
     <label style="margin-top:6px">Daftar produk</label>
     <div id="order-items"></div>
-    <button type="button" class="btn" style="background:var(--herb-soft);color:var(--herb-deep);margin-top:2px" onclick="addOrderItem()">+ Tambah produk</button>
     <div id="order-total" style="margin-top:14px"></div>
     <label style="margin-top:12px">Catatan</label><input id="o_cat" placeholder="opsional (nama pembeli, dll)">
     <button class="btn" style="margin-top:14px" onclick="saveOrderan()">Simpan orderan</button>`);
