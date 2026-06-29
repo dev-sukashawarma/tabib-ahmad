@@ -952,7 +952,6 @@ function openQuickAddProduk(){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div><label>Harga modal / HPP (Rp)</label><input id="qp_hpp" type="number" inputmode="numeric" placeholder="0"></div>
       </div>
-      <label>Stok awal</label><input id="qp_awal" type="number" inputmode="numeric" value="0" style="margin-bottom:12px">
       <label>Foto produk (opsional)</label>
       <div style="display:flex;gap:10px;margin-bottom:12px">
         <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px dashed var(--line);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--herb-deep)">
@@ -989,7 +988,7 @@ async function saveQuickProduk(){
     satuan:document.getElementById('qp_sat').value||'pcs',
     hpp:+document.getElementById('qp_hpp').value||0,
     stok_min:5,
-    stok_awal:+document.getElementById('qp_awal').value||0
+    stok_awal:0
   };
   if(window._qpFile){
     const url=await uploadImage(window._qpFile,'tmp-'+Date.now());
