@@ -580,7 +580,7 @@ function listJual(){
   if(srchMasuk)r=r.filter(x=>nameOf(x.produkId).toLowerCase().includes(srchMasuk.toLowerCase())||(x.catatan||'').toLowerCase().includes(srchMasuk.toLowerCase()));
   if(!r.length)return emptyRow();
   return r.map(x=>{const laba=x.qty*(x.harga-(x.hppSnapshot||0)),hpp=x.qty*(x.hppSnapshot||0);return `<div class="row"><div class="ic">🛒</div>
-    <div><div class="ti">${nameOf(x.produkId)}</div><div class="me">${fdate(x.tgl)} · ${x.qty} × ${RP(x.harga)}</div></div>
+    <div><div class="ti">${nameOf(x.produkId)} <span style="font-size:12px;font-weight:600;color:var(--ink-soft)">(HPP: ${RP(x.hppSnapshot||0)})</span></div><div class="me">${fdate(x.tgl)} · ${x.qty} × ${RP(x.harga)}</div></div>
     <div class="amt in">${RP(laba)}<small>omzet ${RP(x.qty*x.harga)}<br>hpp ${RP(hpp)}</small></div>${delBtn('jual',x.id)}</div>`;}).join('');
 }
 
@@ -608,7 +608,7 @@ function listBeli(){
   if(srchKeluar)r=r.filter(x=>nameOf(x.produkId).toLowerCase().includes(srchKeluar.toLowerCase()));
   if(!r.length)return emptyRow();
   return r.map(x=>`<div class="row"><div class="ic amber">📥</div>
-    <div><div class="ti">${nameOf(x.produkId)}</div><div class="me">${fdate(x.tgl)} · ${x.qty} × ${RP(x.harga)}</div></div>
+    <div><div class="ti">${nameOf(x.produkId)} <span style="font-size:12px;font-weight:600;color:var(--ink-soft)">(HPP: ${RP(x.harga)})</span></div><div class="me">${fdate(x.tgl)}${x.catatan?' · '+x.catatan:''}</div></div>
     <div class="amt out">${RP(x.qty*x.harga)}<small>+ ${x.qty} stok</small></div>${delBtn('beli',x.id)}</div>`).join('');
 }
 
