@@ -609,7 +609,7 @@ function listBeli(){
   if(!r.length)return emptyRow();
   return r.map(x=>`<div class="row"><div class="ic amber">📥</div>
     <div><div class="ti">${nameOf(x.produkId)}</div><div class="me">${fdate(x.tgl)} · ${x.qty} × ${RP(x.harga)}</div></div>
-    <div class="amt out">${RP(x.qty*x.harga)}<small>+ stok</small></div>${delBtn('beli',x.id)}</div>`).join('');
+    <div class="amt out">${RP(x.qty*x.harga)}<small>+ ${x.qty} stok</small></div>${delBtn('beli',x.id)}</div>`).join('');
 }
 
 /* update list tanpa full render */
