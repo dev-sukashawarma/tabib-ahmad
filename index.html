@@ -1021,7 +1021,7 @@ function openForm(kind,arg){
     <label>Tanggal</label><input type="date" id="f_tgl" value="${today()}">
     <label>Produk</label><select id="f_prod" onchange="prefillJual()">${prodOptions()}</select>
     <div class="two"><div><label>Jumlah</label><input id="f_qty" type="number" inputmode="numeric" oninput="calcTot()" value="1"></div>
-    <div><label>Harga jual / unit</label><input id="f_harga" type="number" inputmode="numeric" oninput="calcTot()"></div></div>
+    <div><label id="lbl_harga_jual">Harga jual / unit</label><input id="f_harga" type="number" inputmode="numeric" oninput="calcTot()"></div></div>
     <div class="hint" id="f_hint"></div>
     <label>Catatan</label><input id="f_cat" placeholder="opsional">
     <button class="btn" onclick="saveForm('jual')">Simpan penjualan</button>`;
@@ -1123,7 +1123,12 @@ async function delProduk(id){
 }
 window.delProduk=delProduk;
 
-function prefillJual(){calcTot();}
+function prefillJual(){
+  const pr=db.produk.find(p=>p.id===document.getElementById('f_prod')?.value);
+  const lbl = document.getElementById('lbl_harga_jual');
+  if(lbl && pr) lbl.innerHTML = `Harga jual / unit <span style="color:var(--amber);font-weight:700">(Modal: ${RP(pr.hpp)})</span>`;
+  calcTot();
+}
 function prefillBeli(){
   const pr=db.produk.find(p=>p.id===document.getElementById('f_prod')?.value);
   if(pr) { const el=document.getElementById('f_harga'); if(el) el.value=pr.hpp||''; }
