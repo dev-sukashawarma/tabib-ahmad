@@ -1042,7 +1042,7 @@ function openForm(kind,arg){
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><label style="margin:0;flex:1">Produk</label><button type="button" onclick="openQuickAddProduk()" style="font-size:12px;padding:4px 10px;border-radius:8px;background:var(--herb-soft);color:var(--herb-deep);border:none;cursor:pointer;font-weight:600">+ Produk baru</button></div>
     <select id="f_prod">${prodOptions()}</select>
     <div class="two"><div><label>Jumlah beli</label><input id="f_qty" type="number" inputmode="numeric" oninput="calcTot()" value="1"></div>
-    <div><label>Harga beli / unit</label><input id="f_harga" type="number" inputmode="numeric" oninput="calcTot()"></div></div>
+    <div><label>HPP</label><input id="f_harga" type="number" inputmode="numeric" oninput="calcTot()"></div></div>
     <div class="hint" id="f_hint"></div>
     <label>Catatan</label><input id="f_cat" placeholder="opsional">
     <button class="btn" onclick="saveForm('beli')">Simpan pembelian</button>`;
