@@ -1186,6 +1186,10 @@ window.saveForm=saveForm;
 function openAddProduk(){
   openSheet(`<h3>📦 Produk Baru</h3>
     <label>Nama produk</label><input id="ap_nama" placeholder="mis. Minyak Zaitun">
+    <div class="two" style="margin-top:8px">
+      <div><label>Kategori</label><select id="ap_kat">${KATEGORI_PRODUK.map(k=>`<option>${k}</option>`).join('')}</select></div>
+      <div><label>Satuan</label><select id="ap_sat">${SATUAN.map(s=>`<option ${s==='pcs'?'selected':''}>${s}</option>`).join('')}</select></div>
+    </div>
     <label style="margin-top:8px">Gambar (opsional)</label>
     <input type="file" id="ap_img" accept="image/jpeg,image/png" style="margin-top:4px">
     <div id="ap_img_preview"></div>
@@ -1204,11 +1208,13 @@ window.openAddProduk=openAddProduk;
 
 async function saveAddProduk(){
   const nama=(document.getElementById('ap_nama').value||'').trim();
+  const kat=document.getElementById('ap_kat').value||'Lainnya';
+  const sat=document.getElementById('ap_sat').value||'pcs';
   if(!nama)return alert('Isi nama produk');
   const qty=+(document.getElementById('ap_qty').value)||0;
   const hpp=+(document.getElementById('ap_hpp').value)||0;
   const imgFile=document.getElementById('ap_img').files[0];
-  const {data,error}=await sb.from('produk').insert({user_id:currentUser.id,nama,kategori:'Lainnya',satuan:'pcs',hpp,stok_min:0,stok_awal:qty}).select().single();
+  const {data,error}=await sb.from('produk').insert({user_id:currentUser.id,nama,kategori:kat,satuan:sat,hpp,stok_min:0,stok_awal:qty}).select().single();
   if(error)return alert('Gagal menyimpan: '+error.message);
   if(imgFile){const url=await uploadImage(imgFile,data.id);if(url)await sb.from('produk').update({image_url:url}).eq('id',data.id);}
   await loadAll();closeSheet();render();
