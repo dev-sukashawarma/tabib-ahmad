@@ -436,8 +436,31 @@ function vDash(){
   <h2 class="sec">Stok perlu perhatian</h2>
   ${stockAlerts()}
 
+  <h2 class="sec">Aktivitas Terkini</h2>
+  <div class="card">${recentActivity()}</div>
+
   <div style="height:24px"></div>
   `;
+}
+
+function recentActivity(){
+  let all = [];
+  db.amplop.forEach(x=> all.push({tgl:x.tgl, type:'amplop', data:x}));
+  db.jual.forEach(x=> all.push({tgl:x.tgl, type:'jual', data:x}));
+  db.ops.forEach(x=> all.push({tgl:x.tgl, type:'ops', data:x}));
+  db.beli.forEach(x=> all.push({tgl:x.tgl, type:'beli', data:x}));
+  
+  all.sort((a,b)=>b.tgl.localeCompare(a.tgl));
+  all = all.slice(0, 6);
+  if(!all.length) return `<div class="empty">Belum ada aktivitas.</div>`;
+  
+  return all.map(x=>{
+    const d = x.data;
+    if(x.type==='amplop') return `<div class="row" style="padding:12px 14px"><div class="ic">🤲</div><div><div class="ti">${d.sumber||'(tanpa nama)'}</div><div class="me">Pemasukan Amplop · ${fdate(d.tgl)}</div></div><div class="amt in">${RP(d.jumlah)}</div></div>`;
+    if(x.type==='jual') return `<div class="row" style="padding:12px 14px"><div class="ic">🛒</div><div><div class="ti">${nameOf(d.produkId)}</div><div class="me">Penjualan Produk · ${fdate(d.tgl)}</div></div><div class="amt in">${RP(d.qty*d.harga)}</div></div>`;
+    if(x.type==='ops') return `<div class="row" style="padding:12px 14px"><div class="ic amber">🔴</div><div><div class="ti">${d.nama}</div><div class="me">Biaya Operasional · ${fdate(d.tgl)}</div></div><div class="amt out">${RP(d.jumlah)}</div></div>`;
+    if(x.type==='beli') return `<div class="row" style="padding:12px 14px"><div class="ic amber">📥</div><div><div class="ti">${nameOf(d.produkId)}</div><div class="me">Beli Stok · ${fdate(d.tgl)}</div></div><div class="amt out">${RP(d.qty*d.harga)}</div></div>`;
+  }).join('');
 }
 
 /* ---------- charts ---------- */
