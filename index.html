@@ -1134,6 +1134,7 @@ async function saveForm(kind){
     res=await sb.from('ops').insert({user_id:currentUser.id,tgl:g('f_tgl'),nama:g('f_nama'),jumlah:j,kategori:g('f_kat'),catatan:g('f_cat')});}
   else if(kind==='jual'){const q=+g('f_qty'),h=+g('f_harga');if(!q||!h)return alert('Isi jumlah & harga');
     const pr=db.produk.find(p=>p.id===g('f_prod'));
+    if(pr&&pr.stok<q)return alert(`Stok ${pr.nama} tidak cukup (sisa ${pr.stok} ${pr.satuan})`);
     res=await sb.from('jual').insert({user_id:currentUser.id,tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,hpp_snapshot:pr?pr.hpp:0,catatan:g('f_cat')});}
   else if(kind==='beli'){const q=+g('f_qty'),h=+g('f_harga');if(!q||!h)return alert('Isi jumlah & harga');
     res=await sb.from('beli').insert({user_id:currentUser.id,tgl:g('f_tgl'),produk_id:g('f_prod'),qty:q,harga:h,catatan:g('f_cat')});
@@ -1264,7 +1265,9 @@ async function saveOrderan(){
     if(!(+it.qty)||!(+it.harga))return alert('Isi qty & harga tiap produk');
   }
   for(const it of items){
-    const p=db.produk.find(x=>x.id===it.produkId); it.hppVal=p?p.hpp:0;
+    const p=db.produk.find(x=>x.id===it.produkId);
+    if(p&&p.stok<+it.qty)return alert(`Stok ${p.nama} tidak cukup (sisa ${p.stok} ${p.satuan})`);
+    it.hppVal=p?p.hpp:0;
   }
   const rows=items.map(it=>({user_id:currentUser.id,tgl,produk_id:it.produkId,qty:+it.qty,harga:+it.harga,hpp_snapshot:it.hppVal||0,catatan:cat}));
   const {error}=await sb.from('jual').insert(rows);
