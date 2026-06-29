@@ -177,7 +177,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
 .search-wrap:before{content:"🔍";position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none}
 
 /* riwayat produk timeline */
-.tl-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tl-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .tl-item:last-child{border-bottom:none}
 .tl-dot{width:8px;height:8px;border-radius:99px;margin-top:5px;flex:none}
 
@@ -655,9 +655,9 @@ function openProdukDetail(id){
   if(!p)return;
 
   const riwayat=[];
-  db.beli.filter(x=>x.produkId===id).forEach(x=>riwayat.push({tgl:x.tgl,tipe:'beli',qty:x.qty,harga:x.harga,catatan:x.catatan}));
-  db.jual.filter(x=>x.produkId===id).forEach(x=>riwayat.push({tgl:x.tgl,tipe:'jual',qty:x.qty,harga:x.harga,catatan:x.catatan}));
-  db.adj.filter(x=>x.produkId===id).forEach(x=>riwayat.push({tgl:x.tgl,tipe:'adj',delta:x.delta,catatan:x.catatan}));
+  db.beli.filter(x=>x.produkId===id).forEach(x=>riwayat.push({id:x.id, tgl:x.tgl,tipe:'beli',qty:x.qty,harga:x.harga,catatan:x.catatan}));
+  db.jual.filter(x=>x.produkId===id).forEach(x=>riwayat.push({id:x.id, tgl:x.tgl,tipe:'jual',qty:x.qty,harga:x.harga,catatan:x.catatan}));
+  db.adj.filter(x=>x.produkId===id).forEach(x=>riwayat.push({id:x.id, tgl:x.tgl,tipe:'adj',delta:x.delta,catatan:x.catatan}));
   riwayat.sort((a,b)=>b.tgl.localeCompare(a.tgl));
 
   const thumb=p.imageUrl?`<img src="${p.imageUrl}" style="width:100%;max-height:180px;object-fit:cover;border-radius:14px;margin-bottom:14px">`:'';
@@ -675,7 +675,8 @@ function openProdukDetail(id){
         <div style="font-weight:600;font-size:13.5px">${icon} ${label} ${p.satuan}</div>
         <div style="font-size:12px;color:var(--ink-soft)">${fdate(r.tgl)}${r.catatan?' · '+r.catatan:''}</div>
       </div>
-      ${nilai?`<div style="font-weight:700;font-size:13px;color:${r.tipe==='beli'?'var(--amber)':'var(--green)'}">${RP(nilai)}</div>`:''}
+      ${nilai?`<div style="font-weight:700;font-size:13px;color:${r.tipe==='beli'?'var(--amber)':'var(--green)'};margin-right:8px">${RP(nilai)}</div>`:''}
+      ${delBtn(r.tipe, r.id)}
     </div>`;
   }).join(''):`<div class="empty" style="padding:20px">Belum ada riwayat transaksi.</div>`;
 
