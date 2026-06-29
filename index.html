@@ -1001,7 +1001,10 @@ async function saveQuickProduk(){
   document.getElementById('quick-produk-overlay').remove();
   await loadAll();
   const sel=document.getElementById('f_prod');
-  if(sel)sel.innerHTML=prodOptions(data.id);
+  if(sel) {
+    sel.innerHTML=prodOptions(data.id);
+    if(typeof prefillBeli === 'function') prefillBeli();
+  }
 }
 window.openQuickAddProduk=openQuickAddProduk;
 window.saveQuickProduk=saveQuickProduk;
