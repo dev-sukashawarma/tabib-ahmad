@@ -910,7 +910,7 @@ document.getElementById('fab').onclick=()=>{
 };
 
 const today=()=>new Date().toISOString().slice(0,10);
-function prodOptions(sel){return db.produk.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${p.nama} (${p.stok} ${p.satuan})</option>`).join('')}
+function prodOptions(sel){return db.produk.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${p.nama} (${p.stok} ${p.satuan} - HPP: ${RP(p.hpp)})</option>`).join('')}
 
 /* ---------- upload gambar ---------- */
 async function uploadImage(file,produkId){
