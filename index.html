@@ -341,7 +341,7 @@ async function loadAll(){
   ]);
   const err=[pr,am,ju,op,be,ad,ds].find(r=>r.error);
   if(err){alert('Gagal memuat data: '+err.error.message);return;}
-  db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,hargaJual:+r.harga_jual,stokMin:+r.stok_min,stokAwal:+r.stok_awal,imageUrl:r.image_url,createdAt:r.created_at,stok:0}));
+  db.produk=(pr.data||[]).map(r=>({id:r.id,nama:r.nama,kategori:r.kategori,satuan:r.satuan,hpp:+r.hpp,stokMin:+r.stok_min,stokAwal:+r.stok_awal,imageUrl:r.image_url,createdAt:r.created_at,stok:0}));
   db.amplop=(am.data||[]).map(r=>({id:r.id,tgl:r.tgl,sumber:r.sumber,jumlah:+r.jumlah,catatan:r.catatan}));
   db.jual=(ju.data||[]).map(r=>({id:r.id,tgl:r.tgl,produkId:r.produk_id,qty:+r.qty,harga:+r.harga,hppSnapshot:+r.hpp_snapshot,catatan:r.catatan}));
   db.ops=(op.data||[]).map(r=>({id:r.id,tgl:r.tgl,nama:r.nama,jumlah:+r.jumlah,kategori:r.kategori,catatan:r.catatan}));
@@ -626,7 +626,7 @@ function prodRow(p){
   const cls=out?'b-out':low?'b-low':'b-ok', txt=out?(p.stok<0?'minus':'habis'):low?'menipis':'aman';
   const thumb=p.imageUrl?`<img src="${p.imageUrl}" style="width:40px;height:40px;border-radius:12px;object-fit:cover" alt="${p.nama}">`:'📦';
   return `<div class="row" style="cursor:pointer" onclick="openProdukDetail('${p.id}')"><div class="ic">${thumb}</div>
-    <div><div class="ti">${p.nama} <span class="muted" style="font-weight:500;font-size:12px">›</span></div><div class="me">Modal ${RP(p.hpp)} · jual ${RP(p.hargaJual)}</div></div>
+    <div><div class="ti">${p.nama} <span class="muted" style="font-weight:500;font-size:12px">›</span></div><div class="me">Modal ${RP(p.hpp)}</div></div>
     <div class="amt">${p.stok} ${p.satuan}<small><span class="badge ${cls}">${txt}</span></small></div></div>`;
 }
 
@@ -948,8 +948,7 @@ function openQuickAddProduk(){
         <div><label>Satuan</label><input id="qp_sat" placeholder="pcs / botol / kg" value="pcs"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div><label>Harga modal (Rp)</label><input id="qp_hpp" type="number" inputmode="numeric" placeholder="0"></div>
-        <div><label>Harga jual (Rp)</label><input id="qp_jual" type="number" inputmode="numeric" placeholder="0"></div>
+        <div><label>Harga modal / HPP (Rp)</label><input id="qp_hpp" type="number" inputmode="numeric" placeholder="0"></div>
       </div>
       <label>Stok awal</label><input id="qp_awal" type="number" inputmode="numeric" value="0" style="margin-bottom:12px">
       <label>Foto produk (opsional)</label>
@@ -987,7 +986,6 @@ async function saveQuickProduk(){
     kategori:document.getElementById('qp_kat').value,
     satuan:document.getElementById('qp_sat').value||'pcs',
     hpp:+document.getElementById('qp_hpp').value||0,
-    harga_jual:+document.getElementById('qp_jual').value||0,
     stok_min:5,
     stok_awal:+document.getElementById('qp_awal').value||0
   };
@@ -1055,8 +1053,7 @@ function openForm(kind,arg){
     <label>Nama produk</label><input id="f_nama" placeholder="Mis. Minyak Habbatussauda" value="${ed?ed.nama:''}">
     <div class="two"><div><label>Kategori</label><select id="f_kat2">${KATEGORI_PRODUK.map(k=>`<option ${ed&&ed.kategori===k?'selected':''}>${k}</option>`).join('')}</select></div>
     <div><label>Satuan</label><input id="f_sat" placeholder="botol / pcs / kg" value="${ed?ed.satuan:'pcs'}"></div></div>
-    <div class="two"><div><label>HPP (Rp)</label><input id="f_hpp" type="number" inputmode="numeric" placeholder="modal beli" value="${ed&&ed.hpp?ed.hpp:''}"></div>
-    <div><label>Harga jual (Rp)</label><input id="f_jual" type="number" inputmode="numeric" placeholder="harga jual" value="${ed&&ed.hargaJual?ed.hargaJual:''}"></div></div>
+    <label>HPP (Rp)</label><input id="f_hpp" type="number" inputmode="numeric" placeholder="modal beli" value="${ed&&ed.hpp?ed.hpp:''}">
     <div class="two"><div><label>Stok minimum</label><input id="f_min" type="number" inputmode="numeric" value="${ed?ed.stokMin:5}"></div>
     ${ed?'':`<div><label>Stok awal</label><input id="f_awal" type="number" inputmode="numeric" value="0"></div>`}</div>
     <label>Gambar produk (jpg/png, max 5MB)</label>
@@ -1123,8 +1120,7 @@ async function delProduk(id){
 }
 window.delProduk=delProduk;
 
-function prefillJual(){const p=db.produk.find(x=>x.id===document.getElementById('f_prod').value);
-  if(p&&!document.getElementById('f_harga').value)document.getElementById('f_harga').value=p.hargaJual||'';calcTot();}
+function prefillJual(){calcTot();}
 function calcTot(){const q=+(document.getElementById('f_qty')?.value||0),h=+(document.getElementById('f_harga')?.value||0);
   const el=document.getElementById('f_hint');if(el)el.textContent=q&&h?('Total: '+RP(q*h)):'';}
 window.prefillJual=prefillJual;window.calcTot=calcTot;
@@ -1149,7 +1145,7 @@ async function saveForm(kind){
     const file=imgKamera||imgGaleri;
     let imageUrl=null;
     if(file)imageUrl=await uploadImage(file,eid||'new');
-    const payload={nama:g('f_nama'),kategori:g('f_kat2'),satuan:g('f_sat')||'pcs',hpp:+g('f_hpp')||0,stok_min:+g('f_min')||0,harga_jual:+g('f_jual')||0};
+    const payload={nama:g('f_nama'),kategori:g('f_kat2'),satuan:g('f_sat')||'pcs',hpp:+g('f_hpp')||0,stok_min:+g('f_min')||0};
     if(imageUrl)payload.image_url=imageUrl;
     if(eid)res=await sb.from('produk').update(payload).eq('id',eid);
     else{payload.user_id=currentUser.id;payload.stok_awal=+g('f_awal')||0;res=await sb.from('produk').insert(payload);}}
@@ -1196,7 +1192,7 @@ async function saveAddProduk(){
   const qty=+(document.getElementById('ap_qty').value)||0;
   const hpp=+(document.getElementById('ap_hpp').value)||0;
   const imgFile=document.getElementById('ap_img').files[0];
-  const {data,error}=await sb.from('produk').insert({user_id:currentUser.id,nama,kategori:'Lainnya',satuan:'pcs',hpp,harga_jual:0,stok_min:0,stok_awal:qty}).select().single();
+  const {data,error}=await sb.from('produk').insert({user_id:currentUser.id,nama,kategori:'Lainnya',satuan:'pcs',hpp,stok_min:0,stok_awal:qty}).select().single();
   if(error)return alert('Gagal menyimpan: '+error.message);
   if(imgFile){const url=await uploadImage(imgFile,data.id);if(url)await sb.from('produk').update({image_url:url}).eq('id',data.id);}
   await loadAll();closeSheet();render();
@@ -1247,7 +1243,7 @@ function removeOrderItem(i){orderItems.splice(i,1);renderOrderItems();}
 function onOrderProd(i,val){
   const it=orderItems[i];
   it.produkId=val;
-  const p=db.produk.find(x=>x.id===val);if(p&&!it.harga)it.harga=p.hargaJual||'';
+  // harga diisi manual oleh user
   renderOrderItems();
 }
 function onOrderField(i,f,v){
