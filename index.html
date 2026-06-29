@@ -1041,7 +1041,7 @@ function openForm(kind,arg){
     h=`<h3>🔵 Pembelian Stok</h3>
     <label>Tanggal</label><input type="date" id="f_tgl" value="${today()}">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><label style="margin:0;flex:1">Produk</label><button type="button" onclick="openQuickAddProduk()" style="font-size:12px;padding:4px 10px;border-radius:8px;background:var(--herb-soft);color:var(--herb-deep);border:none;cursor:pointer;font-weight:600">+ Produk baru</button></div>
-    <select id="f_prod">${prodOptions()}</select>
+    <select id="f_prod" onchange="prefillBeli()">${prodOptions()}</select>
     <div class="two"><div><label>Jumlah beli</label><input id="f_qty" type="number" inputmode="numeric" oninput="calcTot()" value="1"></div>
     <div><label>HPP</label><input id="f_harga" type="number" inputmode="numeric" oninput="calcTot()"></div></div>
     <div class="hint" id="f_hint"></div>
@@ -1105,6 +1105,7 @@ function openForm(kind,arg){
 
   openSheet(h);
   if(kind==='jual')prefillJual();
+  if(kind==='beli')prefillBeli();
 }
 window.openForm=openForm;
 
@@ -1123,9 +1124,14 @@ async function delProduk(id){
 window.delProduk=delProduk;
 
 function prefillJual(){calcTot();}
+function prefillBeli(){
+  const pr=db.produk.find(p=>p.id===document.getElementById('f_prod')?.value);
+  if(pr) { const el=document.getElementById('f_harga'); if(el) el.value=pr.hpp||''; }
+  calcTot();
+}
 function calcTot(){const q=+(document.getElementById('f_qty')?.value||0),h=+(document.getElementById('f_harga')?.value||0);
   const el=document.getElementById('f_hint');if(el)el.textContent=q&&h?('Total: '+RP(q*h)):'';}
-window.prefillJual=prefillJual;window.calcTot=calcTot;
+window.prefillJual=prefillJual;window.prefillBeli=prefillBeli;window.calcTot=calcTot;
 
 async function saveForm(kind){
   const g=id=>document.getElementById(id)?.value;
