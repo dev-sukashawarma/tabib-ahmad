@@ -368,7 +368,7 @@ function nameOf(id){const p=db.produk.find(x=>x.id===id);return p?p.nama:'?';}
 /* ---------- period ---------- */
 function allMonths(){
   const set=new Set();
-  [...db.amplop,...db.jual,...db.ops,...db.beli].forEach(x=>set.add(x.tgl.slice(0,7)));
+  [...db.amplop,...db.jual,...db.ops,...db.beli,...db.ads].forEach(x=>set.add(x.tgl.slice(0,7)));
   if(!set.size)set.add(new Date().toISOString().slice(0,7));
   return [...set].sort().reverse();
 }
@@ -382,7 +382,9 @@ function totals(){
   const masukAmplop = db.amplop.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.jumlah,0);
   const masukProduk = db.jual.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.qty*x.harga,0);
   const hpp = db.jual.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.qty*(x.hppSnapshot||0),0);
-  const opsTotal = db.ops.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.jumlah,0);
+  const opsBiasa = db.ops.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.jumlah,0);
+  const adsTotal = db.ads.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.jumlah,0);
+  const opsTotal = opsBiasa + adsTotal;
   const beliTotal = db.beli.filter(x=>inP(x.tgl)).reduce((s,x)=>s+x.qty*x.harga,0);
   const pemasukan = masukAmplop+masukProduk;
   const laba = pemasukan - hpp - opsTotal;
@@ -449,6 +451,7 @@ function recentActivity(){
   db.jual.forEach(x=> all.push({tgl:x.tgl, type:'jual', data:x}));
   db.ops.forEach(x=> all.push({tgl:x.tgl, type:'ops', data:x}));
   db.beli.forEach(x=> all.push({tgl:x.tgl, type:'beli', data:x}));
+  db.ads.forEach(x=> all.push({tgl:x.tgl, type:'ads', data:x}));
   
   all.sort((a,b)=>b.tgl.localeCompare(a.tgl));
   all = all.slice(0, 6);
@@ -460,6 +463,7 @@ function recentActivity(){
     if(x.type==='jual') return `<div class="row" style="padding:12px 14px"><div class="ic">🛒</div><div><div class="ti">${nameOf(d.produkId)}</div><div class="me">Penjualan Produk · ${fdate(d.tgl)}</div></div><div class="amt in">${RP(d.qty*d.harga)}</div></div>`;
     if(x.type==='ops') return `<div class="row" style="padding:12px 14px"><div class="ic amber">🔴</div><div><div class="ti">${d.nama}</div><div class="me">Biaya Operasional · ${fdate(d.tgl)}</div></div><div class="amt out">${RP(d.jumlah)}</div></div>`;
     if(x.type==='beli') return `<div class="row" style="padding:12px 14px"><div class="ic amber">📥</div><div><div class="ti">${nameOf(d.produkId)}</div><div class="me">Beli Stok · ${fdate(d.tgl)}</div></div><div class="amt out">${RP(d.qty*d.harga)}</div></div>`;
+    if(x.type==='ads') return `<div class="row" style="padding:12px 14px"><div class="ic amber">📣</div><div><div class="ti">${d.nama||d.jenis}</div><div class="me">Biaya ${d.jenis} · ${fdate(d.tgl)}</div></div><div class="amt out">${RP(d.jumlah)}</div></div>`;
   }).join('');
 }
 
@@ -516,8 +520,8 @@ function chartBars(t){
 
 function chartKategori(){
   const m={};const cnt={};
-  const filtered=db.ops.filter(x=>inP(x.tgl));
-  filtered.forEach(x=>{m[x.kategori]=(m[x.kategori]||0)+x.jumlah;cnt[x.kategori]=(cnt[x.kategori]||0)+1;});
+  db.ops.filter(x=>inP(x.tgl)).forEach(x=>{m[x.kategori]=(m[x.kategori]||0)+x.jumlah;cnt[x.kategori]=(cnt[x.kategori]||0)+1;});
+  db.ads.filter(x=>inP(x.tgl)).forEach(x=>{m['Iklan/Endorse']=(m['Iklan/Endorse']||0)+x.jumlah;cnt['Iklan/Endorse']=(cnt['Iklan/Endorse']||0)+1;});
   const rows=Object.entries(m).sort((a,b)=>b[1]-a[1]);
   if(!rows.length)return `<div class="empty" style="padding:14px">Belum ada pengeluaran operasional.</div>`;
   const tot=rows.reduce((s,r)=>s+r[1],0),max=rows[0][1];
@@ -734,7 +738,7 @@ function vAds(){
   <div class="hero" style="background:linear-gradient(150deg,#7a4fae,#5a3a82)">
     <div class="lbl">Total Biaya Promosi · ${idMonth(period)}</div>
     <div class="big">${RP(total)}</div>
-    <div class="sub">Catatan terpisah — tidak mengurangi Laba Bersih di Beranda.</div>
+    <div class="sub">Biaya promosi ini <b>otomatis dihitung</b> ke dalam Pengeluaran Operasional dan memotong Laba Bersih.</div>
   </div>
   <div class="search-wrap"><input placeholder="Cari iklan / endorse..." value="${srchAds}" oninput="srchAds=this.value;renderList('ads')"></div>
   <div class="card" id="list-ads">${listAds()}</div>
