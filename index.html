@@ -528,7 +528,7 @@ function chartKategori(){
   const cols=['var(--herb)','var(--amber)','var(--red)','var(--gold)','var(--herb-deep)','#7a6a52'];
   return `
   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)">
-    <div style="font-size:12px;color:var(--ink-soft);font-weight:600">${filtered.length} transaksi</div>
+    <div style="font-size:12px;color:var(--ink-soft);font-weight:600">${Object.values(cnt).reduce((a,b)=>a+b,0)} transaksi</div>
     <div style="font-family:Fraunces;font-size:18px;font-weight:600;color:var(--red)">${RP(tot)}</div>
   </div>
   ${rows.map(([k,v],i)=>`<div style="margin:${i?14:0}px 0 0">
