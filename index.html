@@ -11,11 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SUPABASE_URL="https://wulodrtzxkfgstgacqyx.supabase.co";
-const SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1bG9kcnR6eGtmZ3N0Z2FjcXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMzU0MzMsImV4cCI6MjA5NzkxMTQzM30.E90ytkUEPAHt_YFRomI6sXq53qZRZdq1wit_A3YMPis";
-</script>
+<script src="/api-client.js"></script>
 <style>
 :root{
   --bg:#f4efe4; --bg2:#ece3d2; --ink:#2a2014; --ink-soft:#6b5d49;
@@ -241,8 +237,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
 <script>
 const RP = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
 
-/* ---------- Supabase ---------- */
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+/* ---------- Backend API ---------- */
+const sb = window.appBackend;
 let db = {produk:[],amplop:[],jual:[],ops:[],beli:[],adj:[],ads:[],memo:[]};
 let currentUser = null;
 
@@ -274,7 +270,7 @@ async function doSignup(){
   const pass2=document.getElementById('sg_pass2').value;
   const err=document.getElementById('sg_err');
   if(!email||!pass||!pass2)return err.textContent='Isi semua field';
-  if(pass.length<6)return err.textContent='Password minimal 6 karakter';
+  if(pass.length<8)return err.textContent='Password minimal 8 karakter';
   if(pass!==pass2)return err.textContent='Password tidak cocok';
   err.textContent='Memproses...';
   const {data,error}=await sb.auth.signUp({email,password:pass});
@@ -1340,7 +1336,6 @@ if('serviceWorker' in navigator){
 
 /* ---------- INIT ---------- */
 (async function init(){
-  if(SUPABASE_URL.includes('__')){document.body.innerHTML='<p style="font-family:sans-serif;padding:30px">⚠️ Konfigurasi Supabase belum diisi (SUPABASE_URL / SUPABASE_ANON).</p>';return;}
   applySettings();
   const {data:{session}}=await sb.auth.getSession();
   if(session){
