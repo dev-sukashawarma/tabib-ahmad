@@ -1,4 +1,4 @@
-const CACHE = 'tabib-v2';
+const CACHE = 'tabib-v3';
 const ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
@@ -14,8 +14,14 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // network-first: coba ambil fresh, fallback ke cache
+  // Hanya proses GET dan abaikan semua panggilan ke /api/
   if(e.request.method !== 'GET') return;
+  try {
+    const url = new URL(e.request.url);
+    if(url.pathname.startsWith('/api/')) return;
+  } catch(_) {}
+
+  // network-first: coba ambil fresh, fallback ke cache
   e.respondWith(
     fetch(e.request, { cache: 'no-store' })
       .then(res => {

@@ -25,7 +25,7 @@ Gunakan Internal PostgreSQL URL dari Coolify untuk `DATABASE_URL`. Jangan aktifk
 Untuk membuka pendaftaran akun baru, ubah sementara `ALLOW_SIGNUP=true`, buat akun, lalu kembalikan ke `false` dan redeploy.
 
 ## Catatan
-- Session login disimpan sebagai cookie `HttpOnly`, `Secure`, dan `SameSite=Strict`.
+- Session login disimpan sebagai cookie `HttpOnly`, `Secure`, dan `SameSite=Lax`.
 - Setiap operasi database dibatasi oleh akun login pada backend.
 - Tombol **Ekspor data** mengunduh cadangan JSON untuk backup.
 - HPP = harga modal per produk (otomatis terisi dari harga beli terakhir, bisa diedit).

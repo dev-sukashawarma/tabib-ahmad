@@ -58,7 +58,7 @@ function setSessionCookie(res, token, expiresAt) {
   res.cookie(cookieName, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     expires: expiresAt,
     path: '/'
   });
@@ -99,11 +99,13 @@ app.get('/api/health', asyncHandler(async (_req, res) => {
 }));
 
 app.post('/api/auth/login', asyncHandler(async (req, res) => {
-  const email = String(req.body.email || '').trim().toLowerCase();
+  const identifier = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
+  const adminEmail = String(process.env.ADMIN_EMAIL || 'admin@faedahsehat.com').toLowerCase();
+  const email = identifier === 'admin' ? adminEmail : identifier;
   const result = await pool.query(
-    'select id,email,password_hash,display_name,is_admin from public.accounts where lower(email)=$1 and is_active=true',
-    [email]
+    'select id,email,password_hash,display_name,is_admin from public.accounts where (lower(email)=$1 or ($2=\'admin\' and is_admin=true)) and is_active=true limit 1',
+    [email, identifier]
   );
   const account = result.rows[0];
   if (!account || !verifyPassword(password, account.password_hash)) {
@@ -118,7 +120,7 @@ app.post('/api/auth/signup', asyncHandler(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
   if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Email tidak valid' });
-  if (password.length < 8) return res.status(400).json({ error: 'Password minimal 8 karakter' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password minimal 6 karakter' });
   try {
     const result = await pool.query(
       'insert into public.accounts(email,password_hash) values($1,$2) returning id,email,display_name,is_admin',
@@ -271,14 +273,22 @@ app.use((error, _req, res, _next) => {
 
 async function bootstrapAdmin() {
   if (!process.env.ADMIN_PASSWORD) return;
-  if (process.env.ADMIN_PASSWORD.length < 12) throw new Error('ADMIN_PASSWORD minimal 12 karakter');
+  if (process.env.ADMIN_PASSWORD.length < 6) throw new Error('ADMIN_PASSWORD minimal 6 karakter');
   const email = String(process.env.ADMIN_EMAIL || 'admin@faedahsehat.com').toLowerCase();
   const id = process.env.ADMIN_USER_ID || '136ca9d4-1919-4a7f-9664-8a0371681d65';
-  await pool.query(`
-    insert into public.accounts(id,email,password_hash,display_name,is_active,is_admin)
-    values($1,$2,$3,'Admin',true,true)
-    on conflict(id) do update set email=excluded.email,password_hash=excluded.password_hash,is_active=true,is_admin=true
-  `, [id, email, hashPassword(process.env.ADMIN_PASSWORD)]);
+  const hashed = hashPassword(process.env.ADMIN_PASSWORD);
+  const existing = await pool.query('select id from public.accounts where lower(email)=$1 or id=$2 limit 1', [email, id]);
+  if (existing.rowCount > 0) {
+    await pool.query(
+      'update public.accounts set email=$1, password_hash=$2, is_active=true, is_admin=true where id=$3',
+      [email, hashed, existing.rows[0].id]
+    );
+  } else {
+    await pool.query(
+      'insert into public.accounts(id,email,password_hash,display_name,is_active,is_admin) values($1,$2,$3,\'Admin\',true,true)',
+      [id, email, hashed]
+    );
+  }
 }
 
 (async () => {

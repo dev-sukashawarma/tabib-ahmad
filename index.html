@@ -203,7 +203,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--herb);ba
     <p style="margin:0 0 22px;color:var(--ink-soft);font-size:13.5px">Keuangan & Stok Herbal</p>
     <div style="background:var(--card);padding:20px;text-align:left;border-radius:18px;border:1px solid var(--line)">
       <div id="auth-form-login">
-          <label>Email</label><input id="lg_email" type="email" autocomplete="username" placeholder="email@contoh.com" style="margin-bottom:12px">
+          <label>Email atau Username</label><input id="lg_email" type="text" autocomplete="username" placeholder="admin atau email@contoh.com" style="margin-bottom:12px">
           <label>Password</label><input id="lg_pass" type="password" autocomplete="current-password" placeholder="••••••••" style="margin-bottom:14px">
           <button class="btn" onclick="doLogin()">Masuk</button>
           <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--ink-soft)">
@@ -270,7 +270,7 @@ async function doSignup(){
   const pass2=document.getElementById('sg_pass2').value;
   const err=document.getElementById('sg_err');
   if(!email||!pass||!pass2)return err.textContent='Isi semua field';
-  if(pass.length<8)return err.textContent='Password minimal 8 karakter';
+  if(pass.length<6)return err.textContent='Password minimal 6 karakter';
   if(pass!==pass2)return err.textContent='Password tidak cocok';
   err.textContent='Memproses...';
   const {data,error}=await sb.auth.signUp({email,password:pass});
@@ -301,7 +301,12 @@ function showLogin(){
 
 async function enterApp(){
   const {data:{session}}=await sb.auth.getSession();
-  if(!session)return showLogin();
+  if(!session){
+    showLogin();
+    const err = document.getElementById('lg_err');
+    if(err) err.textContent = 'Gagal menyimpan sesi login. Pastikan web diakses via HTTPS.';
+    return;
+  }
   currentUser=session.user;
   document.getElementById('login').style.display='none';
   document.querySelector('header.app').style.display='';
